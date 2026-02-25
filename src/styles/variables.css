@@ -1,0 +1,81 @@
+:root {
+  /* GenZ / Vaporwave / Modern Dark Aesthetics */
+
+  /* Backgrounds */
+  --bg-dark: #030712;
+  /* Gray 950+ (Almost Black) */
+  --bg-card: #111827;
+  /* Gray 900 */
+  --bg-card-hover: #1f2937;
+  /* Gray 800 */
+
+  /* Brand Gradients & Accents */
+  --primary: #6366f1;
+  /* Indigo */
+  --primary-glow: rgba(99, 102, 241, 0.5);
+
+  --secondary: #d946ef;
+  /* Fuchsia */
+  --secondary-glow: rgba(217, 70, 239, 0.5);
+
+  --accent: #22d3ee;
+  /* Cyan */
+  --accent-glow: rgba(34, 211, 238, 0.5);
+
+  /* Typography */
+  --text-primary: #f9fafb;
+  /* Gray 50 */
+  --text-secondary: #9ca3af;
+  /* Gray 400 */
+  --text-muted: #6b7280;
+  /* Gray 500 */
+
+  /* UI Elements */
+  --border-color: rgba(255, 255, 255, 0.1);
+  --header-height: 4.5rem;
+  --container-width: 1400px;
+}
+
+/* Base Override ensuring Dark Mode */
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+}
+
+/* Modern Utilities */
+.glass {
+  background: rgba(17, 24, 39, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.glass-card {
+  background: rgba(31, 41, 55, 0.4);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  background: rgba(31, 41, 55, 0.6);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px -8px var(--primary-glow);
+}
+
+/* Gradient Text Utility */
+.text-gradient {
+  background: linear-gradient(135deg, #c084fc, #6366f1, #3b82f6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-gradient-alt {
+  background: linear-gradient(135deg, #f472b6, #d946ef, #8b5cf6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}

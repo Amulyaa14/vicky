@@ -1,0 +1,96 @@
+# React + TypeScript + Vite
+
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+
+## 🎬 Video Studio Setup
+
+The Video Studio (`/video-studio`) is a browser-based video editing tool with the following features:
+- **My Media**: Upload videos, images, and audio with thumbnail previews; drag & drop to timeline
+- **Content Library**: Search stock assets via Pixabay API (or use built-in fallback samples)
+- **Templates**: 6 pre-built project templates (Social Media, YouTube, Slideshow, Promo, Birthday, Minimal)
+- **Transitions**: 10 transition effects with configurable duration
+- **Export**: Real video encoding via FFmpeg.wasm with resolution/FPS/format/quality options
+
+### Pixabay API Key (Optional)
+To enable stock asset search in the Content Library:
+1. Sign up at [pixabay.com/api/docs](https://pixabay.com/api/docs/) (free)
+2. Create a `.env` file in the project root:
+   ```
+   VITE_PIXABAY_API_KEY=your_api_key_here
+   ```
+3. Restart the dev server
+
+Without an API key, the Content Library shows 10 built-in royalty-free sample assets.
+
+### FFmpeg.wasm Requirements
+The Export feature uses FFmpeg.wasm for in-browser video encoding. This requires `Cross-Origin-Opener-Policy` and `Cross-Origin-Embedder-Policy` headers, which are already configured in `vite.config.ts`. If these headers are unavailable (e.g., some hosting), the app falls back to the MediaRecorder API for WebM output.
+
+Currently, two official plugins are available:
+
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+
+## React Compiler
+
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
+
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
+
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
