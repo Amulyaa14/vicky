@@ -4,6 +4,9 @@ import FileUpload from '../components/ui/FileUpload';
 import AdSpace from '../components/ui/AdSpace';
 import WordEditor from '../components/ui/WordEditor';
 import { useState, useCallback, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+
+const API_URL = import.meta.env.VITE_API_URL || 'https://my-cloudflare-api.rpadmajaa-14.workers.dev';
 import * as pdfjsLib from 'pdfjs-dist';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
@@ -268,6 +271,7 @@ function buildPdfFromPages(pages: ExtractedPage[]): jsPDF {
 
 // ── Main Converter Page ────────────────────────────────────────────────
 const Converter = () => {
+    const { token } = useAuth();
     const [file, setFile] = useState<File | null>(null);
     const [isConverting, setIsConverting] = useState(false);
     const [progress, setProgress] = useState(0);
@@ -400,6 +404,21 @@ const Converter = () => {
                 const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
                 saveAs(blob, `${baseName}.md`);
                 console.log('Markdown download triggered');
+            }
+
+            // Save History
+            if (token && file) {
+                try {
+                    await fetch(`${API_URL}/api/history/document`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({
+                            originalFormat: file.name.split('.').pop() || 'unknown',
+                            targetFormat: outputFormat,
+                            fileName: file.name
+                        })
+                    });
+                } catch (e) { console.error("History saving failed", e); }
             }
 
             setProgress(100);

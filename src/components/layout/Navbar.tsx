@@ -6,11 +6,12 @@ import Button from '@/components/ui/Button';
 import { useTheme } from '@/context/ThemeContext';
 import { cn } from '@/lib/utils';
 import { ExpandableTabs } from '@/components/ui/expandable-tabs';
-import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const NAV_HEIGHT = 64; // px — matches --header-height (4rem)
 
 const Navbar = () => {
+    const { user, logout } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
     const { theme, setTheme } = useTheme();
     const location = useLocation();
@@ -123,16 +124,22 @@ const Navbar = () => {
                             <Sun size={18} className="absolute transition-all scale-100 rotate-0 dark:scale-0 dark:-rotate-90" />
                             <Moon size={18} className="absolute transition-all scale-0 rotate-90 dark:scale-100 dark:rotate-0" />
                         </button>
-                        <SignedIn>
-                            <UserButton afterSignOutUrl="/" />
-                        </SignedIn>
-                        <SignedOut>
-                            <SignInButton mode="modal">
+                        {user ? (
+                            <div className="flex items-center gap-4">
+                                <span className="text-sm font-medium text-muted-foreground hidden lg:block">
+                                    {user.email}
+                                </span>
+                                <Button variant="outline" size="sm" onClick={logout}>
+                                    Log Out
+                                </Button>
+                            </div>
+                        ) : (
+                            <Link to="/login">
                                 <Button variant="default" size="sm" className="hidden lg:flex">
                                     Sign In
                                 </Button>
-                            </SignInButton>
-                        </SignedOut>
+                            </Link>
+                        )}
                     </div>
 
                     {/* Mobile Controls */}
@@ -243,18 +250,22 @@ const Navbar = () => {
                                 </div>
 
                                 {/* CTA */}
-                                <SignedIn>
-                                    <div className="flex justify-center mt-3">
-                                        <UserButton afterSignOutUrl="/" />
+                                {user ? (
+                                    <div className="flex flex-col gap-2 mt-3">
+                                        <div className="text-sm font-medium text-center text-muted-foreground py-2 bg-muted/30 rounded-lg">
+                                            {user.email}
+                                        </div>
+                                        <button onClick={() => { logout(); setIsOpen(false); }} className="w-full py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl text-sm font-semibold transition-colors">
+                                            Log Out
+                                        </button>
                                     </div>
-                                </SignedIn>
-                                <SignedOut>
-                                    <SignInButton mode="modal">
+                                ) : (
+                                    <Link to="/login" onClick={() => setIsOpen(false)}>
                                         <button className="w-full mt-1 py-3 bg-primary hover:bg-primary/90 active:bg-primary/80 text-primary-foreground rounded-xl text-sm font-semibold transition-colors">
                                             Sign In →
                                         </button>
-                                    </SignInButton>
-                                </SignedOut>
+                                    </Link>
+                                )}
                             </nav>
                         </motion.div>
                     </>

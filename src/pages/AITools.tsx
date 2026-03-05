@@ -8,6 +8,9 @@ import {
 import { Helmet } from 'react-helmet-async';
 import toast from 'react-hot-toast';
 import AdSpace from '../components/ui/AdSpace';
+import { useAuth } from '../contexts/AuthContext';
+
+const API_URL = import.meta.env.VITE_API_URL || 'https://my-cloudflare-api.rpadmajaa-14.workers.dev';
 
 /* ─── tiny helper: word / char count ─── */
 const countStats = (txt: string) => {
@@ -120,6 +123,7 @@ type CheckerStatus = 'idle' | 'running' | 'done';
 const LS_KEY = 'quicktools-ai-text';
 
 const AITools = () => {
+    const { token } = useAuth();
     const [text, setText] = useState(() => localStorage.getItem(LS_KEY) || '');
     const [output, setOutput] = useState('');
     const [action, setAction] = useState<string | null>(null);
@@ -145,9 +149,23 @@ const AITools = () => {
         await simulate(700 + Math.random() * 500);
         const result = fn();
         setOutput(result);
+
+        // Save to History Database
+        if (token) {
+            try {
+                await fetch(`${API_URL}/api/history/ai`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ toolName: label, inputText: text, outputText: result })
+                });
+            } catch (e) {
+                console.error("Failed to save history:", e);
+            }
+        }
+
         setIsBusy(false);
         toast.success(`${label} complete!`);
-    }, [text]);
+    }, [text, token]);
 
     const handleSummarise = () => runAction(() => summariseLocal(text), 'Summarize');
     const handleFixGrammar = () => runAction(() => fixGrammarLocal(text), 'Fix Grammar');

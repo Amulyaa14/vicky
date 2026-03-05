@@ -1,49 +1,84 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import type { User, Session } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+
+const API_URL = import.meta.env.VITE_API_URL || 'https://my-cloudflare-api.rpadmajaa-14.workers.dev';
+
+export interface User {
+    id: string;
+    email: string;
+}
 
 interface AuthContextType {
     user: User | null;
-    session: Session | null;
+    token: string | null;
     loading: boolean;
+    login: (token: string, user: User) => void;
+    logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
     user: null,
-    session: null,
+    token: null,
     loading: true,
+    login: () => { },
+    logout: () => { },
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
-    const [session, setSession] = useState<Session | null>(null);
+    const [token, setToken] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Check active session on initial load
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            setUser(session?.user ?? null);
-            setLoading(false);
-        });
+        const checkAuth = async () => {
+            const storedToken = localStorage.getItem('auth_token');
+            if (!storedToken) {
+                setLoading(false);
+                return;
+            }
 
-        // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
-            setUser(session?.user ?? null);
-            setLoading(false);
-        });
+            try {
+                // Verify token with backend
+                const res = await fetch(`${API_URL}/api/auth/me`, {
+                    headers: { 'Authorization': `Bearer ${storedToken}` }
+                });
 
-        return () => subscription.unsubscribe();
+                if (res.ok) {
+                    const data = await res.json();
+                    setUser(data.user);
+                    setToken(storedToken);
+                } else {
+                    // Token invalid or expired
+                    localStorage.removeItem('auth_token');
+                    setToken(null);
+                    setUser(null);
+                }
+            } catch (err) {
+                console.error("Auth check failed", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        checkAuth();
     }, []);
 
+    const login = (newToken: string, newUser: User) => {
+        localStorage.setItem('auth_token', newToken);
+        setToken(newToken);
+        setUser(newUser);
+    };
+
+    const logout = () => {
+        localStorage.removeItem('auth_token');
+        setToken(null);
+        setUser(null);
+    };
+
     return (
-        <AuthContext.Provider value={{ user, session, loading }}>
+        <AuthContext.Provider value={{ user, token, loading, login, logout }}>
             {children}
         </AuthContext.Provider>
     );
 };
 
-export const useAuth = () => {
-    return useContext(AuthContext);
-};
+export const useAuth = () => useContext(AuthContext);

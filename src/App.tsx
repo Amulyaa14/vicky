@@ -4,15 +4,10 @@ import { HelmetProvider } from 'react-helmet-async';
 import { Toaster } from 'react-hot-toast';
 import Layout from '@/components/layout/Layout';
 import NotFound from '@/pages/NotFound';
-import { ClerkProvider } from '@clerk/clerk-react';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
-
-// Import your publishable key
-const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-
-if (!PUBLISHABLE_KEY) {
-  console.warn('Missing VITE_CLERK_PUBLISHABLE_KEY — auth features will be disabled.');
-}
+import { AuthProvider } from './contexts/AuthContext';
+import Login from './pages/Login';
+import Register from './pages/Register';
 
 const Home = lazy(() => import('@/pages/Home'));
 const Converter = lazy(() => import('@/pages/Converter'));
@@ -59,6 +54,10 @@ function App() {
             <Route index element={<Home />} />
             <Route path="expandable-tabs" element={<ExpandableTabsDemo />} />
 
+            {/* Public Auth Routes */}
+            <Route path="login" element={<Login />} />
+            <Route path="register" element={<Register />} />
+
             {/* Protected Routes */}
             <Route path="converter" element={<ProtectedRoute><Converter /></ProtectedRoute>} />
             <Route path="video-tools" element={<ProtectedRoute><VideoTools /></ProtectedRoute>} />
@@ -76,13 +75,9 @@ function App() {
 
   return (
     <HelmetProvider>
-      {PUBLISHABLE_KEY ? (
-        <ClerkProvider publishableKey={PUBLISHABLE_KEY} afterSignOutUrl="/">
-          {appContent}
-        </ClerkProvider>
-      ) : (
-        appContent
-      )}
+      <AuthProvider>
+        {appContent}
+      </AuthProvider>
     </HelmetProvider>
   );
 }
