@@ -33,7 +33,6 @@
     --ring: 262.1 83.3% 57.8%;
 
     --radius: 0.5rem;
-
     --header-height: 4rem;
   }
 
@@ -66,9 +65,7 @@
     --input: 217.2 32.6% 17.5%;
     --ring: 263.4 70% 50.4%;
   }
-}
 
-@layer base {
   * {
     border-color: hsl(var(--border));
   }
@@ -91,5 +88,12 @@
 
   .text-gradient {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-400 dark:to-purple-400;
+  }
+
+  /* Mobile-friendly touch scroll for horizontal containers */
+  .scroll-x-touch {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
   }
 }

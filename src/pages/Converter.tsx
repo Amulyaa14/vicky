@@ -1,4 +1,5 @@
 import { ArrowRight, CheckCircle2, Loader2, Eye, Download, Pencil } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 import FileUpload from '../components/ui/FileUpload';
 import AdSpace from '../components/ui/AdSpace';
 import WordEditor from '../components/ui/WordEditor';
@@ -50,7 +51,7 @@ interface ExtractedPage {
     height: number;
 }
 
-type OutputFormat = 'docx' | 'pdf';
+type OutputFormat = 'docx' | 'pdf' | 'txt' | 'md';
 
 // ── Smart text extraction ──────────────────────────────────────────────
 async function extractPagesWithLayout(file: File): Promise<ExtractedPage[]> {
@@ -150,21 +151,19 @@ function buildDocxFromPages(pages: ExtractedPage[]): Document {
         for (const line of page.lines) {
             if (!line.text) continue;
 
-            const runs: TextRun[] = [];
-            const isBullet = line.isBullet;
-            const displayText = isBullet ? line.text.replace(/^[\u2022\u25CF\u25CB•\-\*]\s*/, '') : line.text;
-
-            runs.push(new TextRun({
-                text: displayText,
-                bold: line.isBold,
-                size: Math.round(line.fontSize * 2), // docx uses half-points
-                font: 'Calibri',
-            }));
+            // Use the raw text as-is (already contains bullet chars like • or -)
+            const runs: TextRun[] = [
+                new TextRun({
+                    text: line.text,
+                    bold: line.isBold || line.isHeading,
+                    size: Math.round(line.fontSize * 2), // docx uses half-points
+                    font: 'Calibri',
+                }),
+            ];
 
             const para = new Paragraph({
                 children: runs,
                 heading: line.isHeading ? HeadingLevel.HEADING_2 : undefined,
-                bullet: isBullet ? { level: 0 } : undefined,
                 spacing: { after: line.isHeading ? 120 : 60, before: line.isHeading ? 240 : 0 },
                 alignment: AlignmentType.LEFT,
             });
@@ -179,6 +178,43 @@ function buildDocxFromPages(pages: ExtractedPage[]): Document {
     }
 
     return new Document({ sections: [{ properties: {}, children }] });
+}
+
+// ── Convert to Plain Text ──────────────────────────────────────────────
+function buildTextFromPages(pages: ExtractedPage[]): string {
+    const parts: string[] = [];
+    for (const page of pages) {
+        const pageText = page.lines
+            .filter(l => l.text)
+            .map(l => l.text)
+            .join('\n');
+        parts.push(pageText);
+    }
+    return parts.join('\n\n--- Page Break ---\n\n');
+}
+
+// ── Convert to Markdown ────────────────────────────────────────────────
+function buildMarkdownFromPages(pages: ExtractedPage[]): string {
+    const parts: string[] = [];
+    for (const page of pages) {
+        const lines: string[] = [];
+        for (const line of page.lines) {
+            if (!line.text) continue;
+            if (line.isHeading) {
+                lines.push(`## ${line.text}`);
+            } else if (line.isBullet) {
+                // Normalize bullet to markdown list item
+                const clean = line.text.replace(/^[\u2022\u25CF\u25CB•\-\*]\s*/, '');
+                lines.push(`- ${clean}`);
+            } else if (line.isBold) {
+                lines.push(`**${line.text}**`);
+            } else {
+                lines.push(line.text);
+            }
+        }
+        parts.push(lines.join('\n'));
+    }
+    return parts.join('\n\n---\n\n');
 }
 
 // ── Convert to PDF ─────────────────────────────────────────────────────
@@ -330,6 +366,8 @@ const Converter = () => {
             setProgress(20);
             setError(null);
 
+            const baseName = file.name.replace(/\.[^/.]+$/, '');
+
             if (outputFormat === 'docx') {
                 console.log('Building DOCX...');
                 setProgress(40);
@@ -337,16 +375,31 @@ const Converter = () => {
                 setProgress(60);
                 const blob = await Packer.toBlob(doc);
                 setProgress(80);
-                saveAs(blob, `${file.name.replace(/\.[^/.]+$/, "")}.docx`);
+                saveAs(blob, `${baseName}.docx`);
                 console.log('DOCX download triggered');
-            } else {
+            } else if (outputFormat === 'pdf') {
                 console.log('Building PDF...');
                 setProgress(40);
                 const pdf = buildPdfFromPages(extractedPages);
                 setProgress(70);
-                const pdfFilename = `${file.name.replace(/\.[^/.]+$/, "")}_converted.pdf`;
-                pdf.save(pdfFilename);
-                console.log('PDF download triggered:', pdfFilename);
+                pdf.save(`${baseName}_converted.pdf`);
+                console.log('PDF download triggered');
+            } else if (outputFormat === 'txt') {
+                console.log('Building TXT...');
+                setProgress(50);
+                const text = buildTextFromPages(extractedPages);
+                setProgress(80);
+                const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+                saveAs(blob, `${baseName}.txt`);
+                console.log('TXT download triggered');
+            } else if (outputFormat === 'md') {
+                console.log('Building Markdown...');
+                setProgress(50);
+                const md = buildMarkdownFromPages(extractedPages);
+                setProgress(80);
+                const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+                saveAs(blob, `${baseName}.md`);
+                console.log('Markdown download triggered');
             }
 
             setProgress(100);
@@ -365,23 +418,29 @@ const Converter = () => {
     const formatOptions = [
         { value: 'docx', label: 'Word Document (.docx)' },
         { value: 'pdf', label: 'PDF Document (.pdf)' },
+        { value: 'txt', label: 'Plain Text (.txt)' },
+        { value: 'md', label: 'Markdown (.md)' },
     ];
 
     return (
-        <div className="pb-20">
-            <div className="container px-4 pt-12 text-center max-w-4xl mx-auto">
-                <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+        <div className="pb-20 overflow-x-hidden">
+            <Helmet>
+                <title>Universal Document Converter – QuickTools</title>
+                <meta name="description" content="Convert PDF to Word, Excel, PowerPoint, and more. Free online document converter — fast, secure, and no registration required." />
+            </Helmet>
+            <div className="container px-4 pt-8 sm:pt-12 text-center max-w-4xl mx-auto">
+                <h1 className="text-3xl sm:text-4xl font-bold mb-3 sm:mb-4 bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
                     Universal Document Converter
                 </h1>
-                <p className="text-muted-foreground mb-12">
+                <p className="text-sm sm:text-base text-muted-foreground mb-8 sm:mb-12">
                     Convert your files to any format instantly. Secure, fast, and free.
                 </p>
 
                 {/* Ad Space */}
-                <AdSpace className="mb-12 border-blue-500/20" />
+                <AdSpace className="mb-8 sm:mb-12 border-blue-500/20" />
 
                 {/* Main Interface */}
-                <div className="glass-card rounded-3xl p-8 mb-12">
+                <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-8 mb-8 sm:mb-12">
                     <FileUpload onFileSelect={handleFileSelect} currentFile={file} onRemoveFile={handleRemoveFile} />
 
                     {/* Extraction indicator */}
@@ -394,19 +453,19 @@ const Converter = () => {
 
                     {/* Preview/Edit buttons - shown immediately after extraction */}
                     {extractedPages.length > 0 && !isExtracting && (
-                        <div className="mt-8 flex flex-col items-center gap-4">
+                        <div className="mt-6 sm:mt-8 flex flex-col items-center gap-4">
                             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-500/10 text-green-500 text-sm font-medium border border-green-500/20">
                                 <CheckCircle2 size={14} />
                                 {extractedPages.reduce((acc, p) => acc + p.lines.length, 0)} lines extracted from {extractedPages.length} page{extractedPages.length > 1 ? 's' : ''}
                             </span>
 
-                            <div className="flex gap-3">
+                            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                                 <button
                                     onClick={() => {
                                         setEditorMode('preview');
                                         setShowPreview(true);
                                     }}
-                                    className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium border border-primary/20 hover:bg-primary/20 transition-all shadow-sm"
+                                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-primary/10 text-primary text-sm font-medium border border-primary/20 hover:bg-primary/20 transition-all shadow-sm"
                                 >
                                     <Eye size={16} />
                                     Preview
@@ -416,7 +475,7 @@ const Converter = () => {
                                         setEditorMode('edit');
                                         setShowPreview(true);
                                     }}
-                                    className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-all shadow-md shadow-primary/20"
+                                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-all shadow-md shadow-primary/20"
                                 >
                                     <Pencil size={16} />
                                     Edit Document
@@ -465,10 +524,10 @@ const Converter = () => {
                     )}
 
                     {/* Action bar */}
-                    <div className="mt-8 pt-8 border-t border-border/50 flex flex-col sm:flex-row justify-end items-center gap-4">
+                    <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-border/50 flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-4">
                         {/* Progress */}
                         {isConverting && (
-                            <div className="flex items-center gap-3 text-sm text-primary">
+                            <div className="flex items-center justify-center gap-3 text-sm text-primary">
                                 <div className="w-32 h-1.5 bg-muted rounded-full overflow-hidden">
                                     <div
                                         className="h-full bg-primary rounded-full transition-all duration-500"
@@ -479,12 +538,11 @@ const Converter = () => {
                             </div>
                         )}
 
-
-                        {/* Convert button */}
+                        {/* Convert button — full width on mobile */}
                         <button
                             onClick={convertDocument}
                             disabled={!file || isConverting}
-                            className={`px-8 py-3 rounded-full font-semibold flex items-center gap-2 transition-all ${!file || isConverting
+                            className={`w-full sm:w-auto px-8 py-3 rounded-full font-semibold flex items-center justify-center gap-2 transition-all ${!file || isConverting
                                 ? 'bg-muted text-muted-foreground cursor-not-allowed'
                                 : 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-primary/40'
                                 }`}
@@ -494,7 +552,7 @@ const Converter = () => {
                             ) : (
                                 <>
                                     <Download size={18} />
-                                    Convert & Download
+                                    Convert &amp; Download
                                 </>
                             )}
                             {!isConverting && <ArrowRight size={18} />}
@@ -502,14 +560,14 @@ const Converter = () => {
                     </div>
                 </div>
 
-                {/* Features List */}
-                <div className="grid md:grid-cols-3 gap-6 text-left">
+                {/* Features List — 1-col mobile, 3-col md */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-left">
                     {[
                         { title: 'Smart Layout', desc: 'Preserves your original line positions, headings, and bullet points.' },
                         { title: 'Live Preview', desc: 'See exactly how your document will look before downloading.' },
                         { title: 'Multiple Formats', desc: 'Export to Word (.docx) or clean PDF with proper formatting.' },
                     ].map((item) => (
-                        <div key={item.title} className="p-6 rounded-xl bg-card border border-border/50 hover:border-primary/30 transition-colors">
+                        <div key={item.title} className="p-5 sm:p-6 rounded-xl bg-card border border-border/50 hover:border-primary/30 transition-colors">
                             <h3 className="font-semibold text-foreground mb-2">{item.title}</h3>
                             <p className="text-sm text-muted-foreground">{item.desc}</p>
                         </div>

@@ -10,9 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@clerk/clerk-react": "^5.61.3",
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
     "@radix-ui/react-slot": "^1.2.4",
+    "@supabase/supabase-js": "^2.98.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "docx": "^9.5.1",
@@ -21,9 +23,11 @@
     "jspdf": "^4.2.0",
     "lucide-react": "^0.562.0",
     "pdfjs-dist": "^5.4.530",
+    "pg": "^8.19.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-helmet-async": "^2.0.5",
+    "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.11.0",
     "tailwind-merge": "^3.4.0",
     "usehooks-ts": "^3.1.1"

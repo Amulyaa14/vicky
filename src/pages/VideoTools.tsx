@@ -63,6 +63,7 @@ const VideoTools = () => {
                     new Promise((_, rej) => setTimeout(() => rej(new Error('Timeout')), 60000)),
                 ]);
                 setLoaded(true);
+                setIsLoading(false);
                 setMessage('');
                 return;
             } catch (e) {

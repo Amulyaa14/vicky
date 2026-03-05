@@ -56,8 +56,10 @@ export function useExport(): UseExportReturn {
         return new Promise((resolve, reject) => {
             const video = document.createElement('video');
             video.src = videoUrl;
-            video.muted = false;
+            video.muted = true;       // MUST be muted to allow autoplay
             video.playsInline = true;
+            video.crossOrigin = 'anonymous';
+            video.preload = 'auto';
 
             video.onloadeddata = () => {
                 const canvas = document.createElement('canvas');
@@ -70,15 +72,6 @@ export function useExport(): UseExportReturn {
                 const ctx = canvas.getContext('2d')!;
 
                 const stream = canvas.captureStream(settings.fps);
-                // Add audio track if the video has audio
-                try {
-                    const audioCtx = new AudioContext();
-                    const source = audioCtx.createMediaElementSource(video);
-                    const dest = audioCtx.createMediaStreamDestination();
-                    source.connect(dest);
-                    source.connect(audioCtx.destination);
-                    dest.stream.getAudioTracks().forEach(t => stream.addTrack(t));
-                } catch { /* no audio track — fine */ }
 
                 const mimeType = settings.format === 'webm' ? 'video/webm;codecs=vp9'
                     : settings.format === 'mp4' ? 'video/mp4'
@@ -98,7 +91,7 @@ export function useExport(): UseExportReturn {
                 };
                 recorder.onerror = () => reject(new Error('MediaRecorder error'));
 
-                // Draw frames
+                // Draw frames to canvas
                 const drawFrame = () => {
                     if (video.ended || video.paused) return;
                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -109,8 +102,12 @@ export function useExport(): UseExportReturn {
                 };
 
                 recorder.start(100);
-                video.play();
-                drawFrame();
+                video.play()
+                    .then(() => drawFrame())
+                    .catch((err) => {
+                        recorder.stop();
+                        reject(new Error('Browser blocked video playback: ' + err.message));
+                    });
 
                 video.onended = () => {
                     recorder.stop();
