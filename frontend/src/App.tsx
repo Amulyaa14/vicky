@@ -8,6 +8,9 @@ import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { AuthProvider } from './contexts/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import VerifyEmail from './pages/VerifyEmail';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 const Home = lazy(() => import('@/pages/Home'));
 const Converter = lazy(() => import('@/pages/Converter'));
@@ -57,6 +60,9 @@ function App() {
             {/* Public Auth Routes */}
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />
+            <Route path="verify-email" element={<VerifyEmail />} />
+            <Route path="forgot-password" element={<ForgotPassword />} />
+            <Route path="reset-password" element={<ResetPassword />} />
 
             {/* Protected Routes */}
             <Route path="converter" element={<ProtectedRoute><Converter /></ProtectedRoute>} />

@@ -1,0 +1,20 @@
+{
+    "name": "my-cloudflare-api",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "dev": "wrangler dev",
+        "deploy": "wrangler deploy --minify",
+        "cf-typegen": "wrangler types"
+    },
+    "dependencies": {
+        "bcryptjs": "^3.0.3",
+        "hono": "^4.2.4"
+    },
+    "devDependencies": {
+        "@cloudflare/workers-types": "^4.20240405.0",
+        "@types/bcryptjs": "^2.4.6",
+        "typescript": "^5.0.4",
+        "wrangler": "^4.69.0"
+    }
+}
