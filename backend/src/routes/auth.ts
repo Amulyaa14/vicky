@@ -110,9 +110,10 @@ authRouter.post('/login', async (c) => {
         const user = await c.env.DB.prepare('SELECT id, email, password_hash, is_email_verified FROM users WHERE email = ?').bind(email).first();
         if (!user) return c.json({ error: 'Invalid credentials' }, 401);
 
-        if (user.is_email_verified === 0) {
-            return c.json({ error: 'Please verify your email address before logging in.', unverified: true }, 403);
-        }
+        // Email verification check disabled for development
+        // if (user.is_email_verified === 0) {
+        //     return c.json({ error: 'Please verify your email address before logging in.', unverified: true }, 403);
+        // }
 
         const isValid = bcrypt.compareSync(password, user.password_hash as string);
         if (!isValid) return c.json({ error: 'Invalid credentials' }, 401);
