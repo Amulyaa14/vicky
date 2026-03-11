@@ -44,6 +44,7 @@ import {
     Maximize2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTheme } from '../../context/ThemeContext';
 
 // ── Types ──────────────────────────────────────────────────────────────
 interface ExtractedTextItem {
@@ -94,7 +95,7 @@ const RibbonBtn = ({ active, onClick, children, title, disabled }: {
         title={title}
         className={cn(
             "p-1.5 border border-transparent rounded transition-colors",
-            active ? "bg-[#c7dff7] border-[#a3c8f0]" : "hover:bg-white hover:border-[#dadada]",
+            active ? "bg-primary/20 border-primary/30" : "hover:bg-muted hover:border-border",
             disabled && "opacity-40 cursor-not-allowed"
         )}
     >
@@ -103,11 +104,11 @@ const RibbonBtn = ({ active, onClick, children, title, disabled }: {
 );
 
 // Section divider
-const Divider = () => <div className="h-16 w-px bg-[#dadada] mx-1 shrink-0" />;
+const Divider = () => <div className="h-16 w-px bg-border/40 mx-1 shrink-0" />;
 
 // Section label
 const SectionLabel = ({ children }: { children: string }) => (
-    <span className="text-[10px] text-[#605e5c] mt-auto">{children}</span>
+    <span className="text-[9px] text-muted-foreground mt-1 uppercase tracking-tight">{children}</span>
 );
 
 // ── Main Component ─────────────────────────────────────────────────────
@@ -126,6 +127,7 @@ const WordEditor: React.FC<WordEditorProps> = ({
     // Editor-level state
     const [pageColor, setPageColor] = useState('#ffffff');
     const [pagePadding, setPagePadding] = useState(72); // pts
+    const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
     const [showRuler, setShowRuler] = useState(false);
     const [showNavPane, setShowNavPane] = useState(true);
     const [showFindReplace, setShowFindReplace] = useState(false);
@@ -136,7 +138,13 @@ const WordEditor: React.FC<WordEditorProps> = ({
     const [showSizeDropdown, setShowSizeDropdown] = useState(false);
     const [showColorPicker, setShowColorPicker] = useState(false);
 
+    const { theme } = useTheme();
     const tabs = ['File', 'Home', 'Insert', 'Design', 'Layout', 'Review', 'View'];
+
+    // Update page color when theme changes
+    useEffect(() => {
+        setPageColor(theme === 'dark' ? '#1e1e1e' : '#ffffff');
+    }, [theme]);
 
     // ── Helpers ──
     const lineKey = (pi: number, li: number) => `${pi}-${li}`;
@@ -288,12 +296,12 @@ const WordEditor: React.FC<WordEditorProps> = ({
     // ── Render ──
     return (
         <div className={cn(
-            "fixed inset-0 z-[100] flex flex-col overflow-hidden selection:bg-blue-500/30",
-            mode === 'preview' ? "bg-[#525659] text-white" : "bg-[#f3f2f1] text-[#323130]"
+            "fixed inset-0 z-[100] flex flex-col overflow-hidden selection:bg-primary/30",
+            mode === 'preview' ? "bg-zinc-800 text-white" : "bg-background text-foreground"
         )}>
             {/* ══════════════════ PREVIEW MODE TOOLBAR ══════════════════ */}
             {mode === 'preview' ? (
-                <div className="h-12 bg-[#323639] flex items-center justify-between px-4 shrink-0 shadow-lg z-10 text-white border-b border-black/20">
+                <div className="h-12 bg-zinc-900 flex items-center justify-between px-4 shrink-0 shadow-lg z-10 text-white border-b border-black/20">
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
                             <div className="p-1.5 bg-red-600 rounded"><Type size={18} className="text-white" /></div>
@@ -304,9 +312,9 @@ const WordEditor: React.FC<WordEditorProps> = ({
                             <Pencil size={14} /> Edit Document
                         </button>
                     </div>
-                    <div className="flex items-center gap-6 bg-[#202124] px-4 py-1 rounded-md">
+                    <div className="flex items-center gap-6 bg-black/40 px-4 py-1 rounded-md border border-white/5">
                         <div className="flex items-center gap-2 text-xs font-medium border-r border-white/10 pr-4">
-                            <input type="text" value={selectedPage + 1} readOnly className="w-8 bg-[#323639] border-none text-center py-0.5 rounded focus:outline-none" />
+                            <input type="text" value={selectedPage + 1} readOnly className="w-8 bg-black/20 border-none text-center py-0.5 rounded focus:outline-none" />
                             <span className="text-white/60">/ {pages.length}</span>
                         </div>
                         <div className="flex items-center gap-3">
@@ -323,55 +331,60 @@ const WordEditor: React.FC<WordEditorProps> = ({
             ) : (
                 /* ══════════════════ EDIT MODE RIBBON ══════════════════ */
                 <header className="shrink-0">
-                    {/* Title Bar */}
-                    <div className="h-10 bg-[#2b579a] flex items-center justify-between px-4 text-white shrink-0">
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2">
-                                <div className="bg-white/10 p-1 rounded hover:bg-white/20 cursor-pointer" onClick={() => alert('Changes saved!')}><Save size={16} /></div>
-                                <div className="bg-white/10 p-1 rounded hover:bg-white/20 cursor-pointer"><Undo2 size={16} /></div>
-                                <div className="bg-white/10 p-1 rounded hover:bg-white/20 cursor-pointer opacity-50"><Redo2 size={16} /></div>
+                    {/* Title Bar - MS Word Style */}
+                    <div className="h-[42px] bg-[#2b579a] dark:bg-[#1a3a6b] flex items-center justify-between px-4 text-white shrink-0 border-b border-black/10">
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1">
+                                <button className="p-1.5 hover:bg-white/10 rounded" title="Save"><Save size={16} /></button>
+                                <button className="p-1.5 hover:bg-white/10 rounded" title="Undo"><Undo2 size={16} /></button>
+                                <button className="p-1.5 hover:bg-white/10 rounded opacity-50"><Redo2 size={16} /></button>
                             </div>
-                            <div className="h-4 w-px bg-white/20" />
-                            <span className="text-sm font-medium">Document1 - Word</span>
+                            <div className="h-5 w-px bg-white/20 mx-1" />
+                            <span className="text-sm font-medium tracking-wide">Document1 - Word</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <button onClick={() => alert('Changes saved!')} className="h-8 px-3 bg-[#4a88da] hover:bg-[#3b70b5] rounded text-xs font-medium flex items-center gap-1.5"><Save size={14} /> Save</button>
-                            <button onClick={() => setMode('preview')} className="h-8 px-3 bg-white text-[#2b579a] hover:bg-white/90 rounded text-xs font-medium flex items-center gap-1.5"><Eye size={14} /> Preview</button>
-                            {onDownload && <button onClick={onDownload} className="h-8 px-3 bg-[#107c10] hover:bg-[#0b5a0b] rounded text-xs font-medium flex items-center gap-1.5"><Download size={14} /> Download</button>}
-                            <div className="w-2" />
-                            <button onClick={onClose} className="h-10 px-4 hover:bg-red-600 transition-colors"><X size={18} /></button>
+                            <button onClick={() => alert('Changes saved!')} className="h-7 px-4 bg-white/10 hover:bg-white/20 rounded text-[11px] font-medium transition-colors shadow-sm">Save</button>
+                            <button onClick={() => setMode('preview')} className="h-7 px-4 bg-white/10 hover:bg-white/20 rounded text-[11px] font-medium transition-colors border border-white/20 flex items-center gap-1.5">
+                                <Eye size={13} /> Preview
+                            </button>
+                            {onDownload && (
+                                <button onClick={onDownload} className="h-7 px-4 bg-[#107c10] hover:bg-[#0b5a0b] rounded text-[11px] font-medium transition-colors shadow-sm flex items-center gap-1.5">
+                                    <Download size={13} /> Download
+                                </button>
+                            )}
+                            <button onClick={onClose} className="p-2 hover:bg-red-600 transition-colors rounded-sm ml-2" title="Close"><X size={18} /></button>
                         </div>
                     </div>
 
-                    {/* Ribbon Tabs */}
-                    <div className="bg-[#2b579a] flex items-end shrink-0 select-none">
+                    {/* Ribbon Tabs - MS Word Style */}
+                    <div className="bg-[#2b579a] dark:bg-[#1a3a6b] flex items-end shrink-0 select-none px-2 h-9">
                         {tabs.map((tab) => (
                             <button key={tab} onClick={() => setActiveTab(tab)}
-                                className={cn("px-4 py-1.5 text-xs font-semibold transition-colors rounded-t-sm mx-0.5",
-                                    activeTab === tab ? "bg-[#f3f2f1] text-[#2b579a]" : "text-white hover:bg-white/10"
+                                className={cn("px-5 py-2 text-[11px] font-medium transition-colors rounded-t-[4px] relative top-[1px]",
+                                    activeTab === tab ? "bg-muted text-foreground dark:bg-muted dark:text-primary shadow-[0_-2px_4px_rgba(0,0,0,0.1)]" : "text-white/90 hover:bg-white/10"
                                 )}>{tab}</button>
                         ))}
                         <div className="flex-1" />
-                        <div className="px-4 py-2 flex items-center gap-2 text-white/80 hover:text-white cursor-pointer">
-                            <span className="text-xs">Tell me what you want to do</span>
-                            <HelpCircle size={14} />
+                        <div className="px-4 py-2 flex items-center gap-2 text-white/70 hover:text-white cursor-pointer transition-colors group">
+                            <span className="text-[10px]">Tell me what you want to do</span>
+                            <HelpCircle size={14} className="group-hover:scale-110 transition-transform" />
                         </div>
                     </div>
 
                     {/* ══════════════════ RIBBON CONTENT ══════════════════ */}
-                    <div className="min-h-[90px] bg-[#f3f2f1] border-b border-[#dadada] flex items-start px-3 py-2 gap-1 overflow-x-auto shrink-0 select-none shadow-sm">
+                    <div className="min-h-[90px] bg-muted/50 dark:bg-muted/20 border-b border-border flex items-start px-3 py-2 gap-1 overflow-x-auto shrink-0 select-none shadow-sm">
 
                         {/* ── FILE TAB ── */}
                         {activeTab === 'File' && (
                             <div className="flex items-center gap-3 py-2">
                                 {onDownload && (
-                                    <button onClick={onDownload} className="flex flex-col items-center gap-1 px-4 py-2 hover:bg-white border border-transparent hover:border-[#dadada] rounded cursor-pointer">
-                                        <Download size={22} className="text-[#2b579a]" />
+                                    <button onClick={onDownload} className="flex flex-col items-center gap-1 px-4 py-2 hover:bg-background border border-transparent hover:border-border rounded cursor-pointer">
+                                        <Download size={22} className="text-primary" />
                                         <span className="text-[10px] font-medium">Download</span>
                                     </button>
                                 )}
-                                <button onClick={() => window.print()} className="flex flex-col items-center gap-1 px-4 py-2 hover:bg-white border border-transparent hover:border-[#dadada] rounded cursor-pointer">
-                                    <Printer size={22} className="text-[#2b579a]" />
+                                <button onClick={() => window.print()} className="flex flex-col items-center gap-1 px-4 py-2 hover:bg-background border border-transparent hover:border-border rounded cursor-pointer">
+                                    <Printer size={22} className="text-primary" />
                                     <span className="text-[10px] font-medium">Print</span>
                                 </button>
                                 <button onClick={() => setMode('preview')} className="flex flex-col items-center gap-1 px-4 py-2 hover:bg-white border border-transparent hover:border-[#dadada] rounded cursor-pointer">
@@ -415,14 +428,14 @@ const WordEditor: React.FC<WordEditorProps> = ({
                                             {/* Font Family Dropdown */}
                                             <div className="relative">
                                                 <button onClick={() => { setShowFontDropdown(!showFontDropdown); setShowSizeDropdown(false); }}
-                                                    className="bg-white border border-[#dadada] rounded px-2 py-0.5 text-xs flex items-center justify-between w-32 cursor-pointer hover:border-[#2b579a]">
+                                                    className="bg-background border border-border rounded px-2 py-0.5 text-xs flex items-center justify-between w-32 cursor-pointer hover:border-primary">
                                                     <span>{focusedStyle?.fontFamily || 'Calibri'}</span><ChevronDown size={12} />
                                                 </button>
                                                 {showFontDropdown && (
-                                                    <div className="absolute top-full left-0 mt-1 bg-white border border-[#dadada] rounded shadow-lg z-50 w-44 max-h-48 overflow-y-auto">
+                                                    <div className="absolute top-full left-0 mt-1 bg-popover border border-border rounded shadow-lg z-50 w-44 max-h-48 overflow-y-auto">
                                                         {FONT_FAMILIES.map(f => (
                                                             <button key={f} onClick={() => setFontFamily(f)}
-                                                                className={cn("w-full text-left px-3 py-1.5 text-xs hover:bg-[#e8f0fe]", focusedStyle?.fontFamily === f && "bg-[#c7dff7]")}
+                                                                className={cn("w-full text-left px-3 py-1.5 text-xs hover:bg-accent", focusedStyle?.fontFamily === f && "bg-primary/20")}
                                                                 style={{ fontFamily: f }}>{f}</button>
                                                         ))}
                                                     </div>
@@ -431,14 +444,14 @@ const WordEditor: React.FC<WordEditorProps> = ({
                                             {/* Font Size Dropdown */}
                                             <div className="relative">
                                                 <button onClick={() => { setShowSizeDropdown(!showSizeDropdown); setShowFontDropdown(false); }}
-                                                    className="bg-white border border-[#dadada] rounded px-2 py-0.5 text-xs flex items-center justify-between w-14 cursor-pointer hover:border-[#2b579a]">
+                                                    className="bg-background border border-border rounded px-2 py-0.5 text-xs flex items-center justify-between w-14 cursor-pointer hover:border-primary">
                                                     <span>{Math.round(focusedStyle?.fontSize || 11)}</span><ChevronDown size={12} />
                                                 </button>
                                                 {showSizeDropdown && (
-                                                    <div className="absolute top-full left-0 mt-1 bg-white border border-[#dadada] rounded shadow-lg z-50 w-16 max-h-48 overflow-y-auto">
+                                                    <div className="absolute top-full left-0 mt-1 bg-popover border border-border rounded shadow-lg z-50 w-16 max-h-48 overflow-y-auto">
                                                         {FONT_SIZES.map(s => (
                                                             <button key={s} onClick={() => setFontSize(s)}
-                                                                className={cn("w-full text-left px-3 py-1 text-xs hover:bg-[#e8f0fe]", Math.round(focusedStyle?.fontSize || 11) === s && "bg-[#c7dff7]")}>{s}</button>
+                                                                className={cn("w-full text-left px-3 py-1 text-xs hover:bg-accent", Math.round(focusedStyle?.fontSize || 11) === s && "bg-primary/20")}>{s}</button>
                                                         ))}
                                                     </div>
                                                 )}
@@ -458,7 +471,7 @@ const WordEditor: React.FC<WordEditorProps> = ({
                                 <Divider />
 
                                 {/* Paragraph */}
-                                <div className="flex flex-col items-center gap-1 shrink-0 text-[#323130]">
+                                <div className="flex flex-col items-center gap-1 shrink-0 text-foreground">
                                     <div className="flex flex-col gap-1.5">
                                         <div className="flex items-center gap-0.5">
                                             <RibbonBtn active={focusedStyle?.alignment === 'left'} onClick={() => setAlignment('left')} title="Align Left"><AlignLeft size={15} /></RibbonBtn>
@@ -480,21 +493,21 @@ const WordEditor: React.FC<WordEditorProps> = ({
                         {activeTab === 'Insert' && (
                             <div className="flex items-center gap-3 py-2">
                                 <button onClick={insertHorizontalRule} disabled={!focusedLine}
-                                    className="flex flex-col items-center gap-1 px-4 py-2 hover:bg-white border border-transparent hover:border-[#dadada] rounded cursor-pointer disabled:opacity-40">
-                                    <MinusSquare size={22} className="text-[#2b579a]" /><span className="text-[10px] font-medium">Horizontal Line</span>
+                                    className="flex flex-col items-center gap-1 px-4 py-2 hover:bg-background border border-transparent hover:border-border rounded cursor-pointer disabled:opacity-40">
+                                    <MinusSquare size={22} className="text-primary" /><span className="text-[10px] font-medium">Horizontal Line</span>
                                 </button>
                                 <button onClick={insertDateTime} disabled={!focusedLine}
-                                    className="flex flex-col items-center gap-1 px-4 py-2 hover:bg-white border border-transparent hover:border-[#dadada] rounded cursor-pointer disabled:opacity-40">
-                                    <Clock size={22} className="text-[#2b579a]" /><span className="text-[10px] font-medium">Date & Time</span>
+                                    className="flex flex-col items-center gap-1 px-4 py-2 hover:bg-background border border-transparent hover:border-border rounded cursor-pointer disabled:opacity-40">
+                                    <Clock size={22} className="text-primary" /><span className="text-[10px] font-medium">Date & Time</span>
                                 </button>
                                 <Divider />
                                 <button onClick={() => { if (!focusedLine) return; const l = pages[focusedLine.pageIdx]?.lines[focusedLine.lineIdx]; if (l) onUpdateLine(focusedLine.pageIdx, focusedLine.lineIdx, l.text + ' [PAGE BREAK]'); }} disabled={!focusedLine}
-                                    className="flex flex-col items-center gap-1 px-4 py-2 hover:bg-white border border-transparent hover:border-[#dadada] rounded cursor-pointer disabled:opacity-40">
-                                    <SplitSquareHorizontal size={22} className="text-[#2b579a]" /><span className="text-[10px] font-medium">Page Break</span>
+                                    className="flex flex-col items-center gap-1 px-4 py-2 hover:bg-background border border-transparent hover:border-border rounded cursor-pointer disabled:opacity-40">
+                                    <SplitSquareHorizontal size={22} className="text-primary" /><span className="text-[10px] font-medium">Page Break</span>
                                 </button>
                                 <button onClick={() => { if (!focusedLine) return; const l = pages[focusedLine.pageIdx]?.lines[focusedLine.lineIdx]; if (l) onUpdateLine(focusedLine.pageIdx, focusedLine.lineIdx, l.text + ' \u2605\u2605\u2605'); }} disabled={!focusedLine}
-                                    className="flex flex-col items-center gap-1 px-4 py-2 hover:bg-white border border-transparent hover:border-[#dadada] rounded cursor-pointer disabled:opacity-40">
-                                    <FileText size={22} className="text-[#2b579a]" /><span className="text-[10px] font-medium">Symbol</span>
+                                    className="flex flex-col items-center gap-1 px-4 py-2 hover:bg-background border border-transparent hover:border-border rounded cursor-pointer disabled:opacity-40">
+                                    <FileText size={22} className="text-primary" /><span className="text-[10px] font-medium">Symbol</span>
                                 </button>
                                 {!focusedLine && <p className="text-[10px] text-[#605e5c] italic ml-4 self-center">Click a line in the document first, then use these tools.</p>}
                             </div>
@@ -507,17 +520,17 @@ const WordEditor: React.FC<WordEditorProps> = ({
                                 <div className="flex flex-col items-center gap-1">
                                     <div className="relative">
                                         <button onClick={() => setShowColorPicker(!showColorPicker)}
-                                            className="flex flex-col items-center gap-1 px-4 py-2 hover:bg-white border border-transparent hover:border-[#dadada] rounded cursor-pointer">
-                                            <Palette size={22} className="text-[#2b579a]" />
+                                            className="flex flex-col items-center gap-1 px-4 py-2 hover:bg-background border border-transparent hover:border-border rounded cursor-pointer">
+                                            <Palette size={22} className="text-primary" />
                                             <span className="text-[10px] font-medium">Page Color</span>
                                         </button>
                                         {showColorPicker && (
-                                            <div className="absolute top-full left-0 mt-1 bg-white border border-[#dadada] rounded shadow-lg z-50 p-3">
-                                                <p className="text-[10px] text-[#605e5c] mb-2 font-medium">Choose page background:</p>
+                                            <div className="absolute top-full left-0 mt-1 bg-popover border border-border rounded shadow-lg z-50 p-3">
+                                                <p className="text-[10px] text-muted-foreground mb-2 font-medium">Choose page background:</p>
                                                 <div className="grid grid-cols-5 gap-1.5">
                                                     {['#ffffff', '#f8f9fa', '#fff3cd', '#d1ecf1', '#d4edda', '#f5c6cb', '#e2e3e5', '#cce5ff', '#ffeaa7', '#fab1a0'].map(c => (
                                                         <button key={c} onClick={() => { setPageColor(c); setShowColorPicker(false); }}
-                                                            className={cn("w-7 h-7 rounded border-2 transition-all hover:scale-110", pageColor === c ? "border-[#2b579a] ring-1 ring-[#2b579a]" : "border-[#dadada]")}
+                                                            className={cn("w-7 h-7 rounded border-2 transition-all hover:scale-110", pageColor === c ? "border-primary ring-1 ring-primary" : "border-border")}
                                                             style={{ backgroundColor: c }} />
                                                     ))}
                                                 </div>
@@ -544,7 +557,7 @@ const WordEditor: React.FC<WordEditorProps> = ({
                                                     }
                                                 }
                                             }}
-                                                className="px-3 py-1.5 text-xs border border-[#dadada] rounded hover:border-[#2b579a] hover:bg-[#e8f0fe] transition-colors"
+                                                className="px-3 py-1.5 text-xs border border-border rounded hover:border-primary hover:bg-accent transition-colors"
                                                 style={{ fontFamily: theme.font }}>
                                                 {theme.name}
                                             </button>
@@ -556,44 +569,50 @@ const WordEditor: React.FC<WordEditorProps> = ({
 
                         {/* ── LAYOUT TAB ── */}
                         {activeTab === 'Layout' && (
-                            <div className="flex items-center gap-4 py-2">
-                                {/* Margins */}
-                                <div className="flex flex-col items-center gap-1">
-                                    <span className="text-[10px] text-[#605e5c] mb-1 font-medium">Margins</span>
-                                    <div className="flex gap-2">
+                            <div className="flex items-center gap-1 h-full">
+                                {/* Margins Group */}
+                                <div className="px-3 flex flex-col items-center gap-1 h-full border-r border-border">
+                                    <SectionLabel>Margins</SectionLabel>
+                                    <div className="flex items-center gap-1 pb-1">
                                         {[
                                             { name: 'Normal', value: 72 },
                                             { name: 'Narrow', value: 36 },
                                             { name: 'Wide', value: 120 },
                                         ].map(m => (
                                             <button key={m.name} onClick={() => setPagePadding(m.value)}
-                                                className={cn("px-3 py-1.5 text-xs border rounded transition-colors",
-                                                    pagePadding === m.value ? "border-[#2b579a] bg-[#c7dff7]" : "border-[#dadada] hover:border-[#2b579a] hover:bg-[#e8f0fe]")}>
+                                                className={cn("px-3 py-1.5 text-[10px] border rounded transition-all shadow-sm h-12 flex flex-col items-center justify-center min-w-[56px]",
+                                                    pagePadding === m.value ? "border-primary bg-primary/20 font-semibold" : "border-border bg-background hover:border-primary hover:bg-muted")}>
                                                 {m.name}
                                             </button>
                                         ))}
                                     </div>
                                 </div>
-                                <Divider />
-                                {/* Orientation */}
-                                <div className="flex flex-col items-center gap-1">
-                                    <span className="text-[10px] text-[#605e5c] mb-1 font-medium">Orientation</span>
-                                    <div className="flex gap-2">
-                                        <button className="flex flex-col items-center gap-1 px-3 py-1.5 border border-[#2b579a] bg-[#c7dff7] rounded text-xs">
-                                            <FileText size={16} className="text-[#2b579a]" /> Portrait
+
+                                {/* Orientation Group */}
+                                <div className="px-3 flex flex-col items-center gap-1 h-full border-r border-border">
+                                    <SectionLabel>Orientation</SectionLabel>
+                                    <div className="flex items-center gap-1 pb-1">
+                                        <button onClick={() => setOrientation('portrait')}
+                                            className={cn("flex flex-col items-center justify-center w-[64px] h-12 border rounded transition-all shadow-sm",
+                                                orientation === 'portrait' ? "border-primary bg-primary/20 font-semibold" : "border-border bg-background hover:border-primary hover:bg-muted")}>
+                                            <FileText size={18} className={cn(orientation === 'portrait' ? "text-primary" : "text-muted-foreground")} />
+                                            <span className="text-[10px] mt-0.5">Portrait</span>
                                         </button>
-                                        <button className="flex flex-col items-center gap-1 px-3 py-1.5 border border-[#dadada] hover:border-[#2b579a] hover:bg-[#e8f0fe] rounded text-xs">
-                                            <RotateCw size={16} className="text-[#2b579a]" /> Landscape
+                                        <button onClick={() => setOrientation('landscape')}
+                                            className={cn("flex flex-col items-center justify-center w-[72px] h-12 border rounded transition-all shadow-sm",
+                                                orientation === 'landscape' ? "border-primary bg-primary/20 font-semibold" : "border-border bg-background hover:border-primary hover:bg-muted")}>
+                                            <RotateCw size={18} className={cn(orientation === 'landscape' ? "text-primary" : "text-muted-foreground")} />
+                                            <span className="text-[10px] mt-0.5">Landscape</span>
                                         </button>
                                     </div>
                                 </div>
-                                <Divider />
-                                {/* Columns */}
-                                <div className="flex flex-col items-center gap-1">
-                                    <span className="text-[10px] text-[#605e5c] mb-1 font-medium">Columns</span>
-                                    <div className="flex gap-2">
-                                        <button className="px-3 py-1.5 text-xs border border-[#2b579a] bg-[#c7dff7] rounded">One</button>
-                                        <button className="px-3 py-1.5 text-xs border border-[#dadada] hover:border-[#2b579a] hover:bg-[#e8f0fe] rounded flex items-center gap-1">
+
+                                {/* Columns Group */}
+                                <div className="px-3 flex flex-col items-center gap-1 h-full">
+                                    <SectionLabel>Columns</SectionLabel>
+                                    <div className="flex items-center gap-1 pb-1">
+                                        <button className="px-5 h-12 text-[11px] border border-primary bg-primary/20 rounded shadow-sm font-semibold">One</button>
+                                        <button className="px-5 h-12 text-[11px] border border-border bg-background hover:border-primary hover:bg-muted rounded shadow-sm flex items-center gap-1.5 text-foreground">
                                             <Columns size={14} /> Two
                                         </button>
                                     </div>
@@ -605,12 +624,12 @@ const WordEditor: React.FC<WordEditorProps> = ({
                         {activeTab === 'Review' && (
                             <div className="flex items-center gap-3 py-2">
                                 <button onClick={() => setShowWordCount(true)}
-                                    className="flex flex-col items-center gap-1 px-4 py-2 hover:bg-white border border-transparent hover:border-[#dadada] rounded cursor-pointer">
-                                    <BarChart3 size={22} className="text-[#2b579a]" /><span className="text-[10px] font-medium">Word Count</span>
+                                    className="flex flex-col items-center gap-1 px-4 py-2 hover:bg-background border border-transparent hover:border-border rounded cursor-pointer">
+                                    <BarChart3 size={22} className="text-primary" /><span className="text-[10px] font-medium">Word Count</span>
                                 </button>
                                 <button onClick={() => setShowFindReplace(true)}
-                                    className="flex flex-col items-center gap-1 px-4 py-2 hover:bg-white border border-transparent hover:border-[#dadada] rounded cursor-pointer">
-                                    <Replace size={22} className="text-[#2b579a]" /><span className="text-[10px] font-medium">Find & Replace</span>
+                                    className="flex flex-col items-center gap-1 px-4 py-2 hover:bg-background border border-transparent hover:border-border rounded cursor-pointer">
+                                    <Replace size={22} className="text-primary" /><span className="text-[10px] font-medium">Find & Replace</span>
                                 </button>
                             </div>
                         )}
@@ -622,20 +641,20 @@ const WordEditor: React.FC<WordEditorProps> = ({
                                 <RibbonBtn active={showNavPane} onClick={() => setShowNavPane(!showNavPane)} title="Toggle Navigation"><PanelLeft size={18} /></RibbonBtn>
                                 <Divider />
                                 <div className="flex flex-col items-center gap-1">
-                                    <span className="text-[10px] text-[#605e5c] mb-1 font-medium">Zoom</span>
+                                    <span className="text-[10px] text-muted-foreground mb-1 font-medium">Zoom</span>
                                     <div className="flex items-center gap-2">
-                                        <button onClick={() => setScale(Math.max(0.3, scale - 0.1))} className="p-1.5 hover:bg-white border border-transparent hover:border-[#dadada] rounded"><ZoomOut size={16} /></button>
+                                        <button onClick={() => setScale(Math.max(0.3, scale - 0.1))} className="p-1.5 hover:bg-background border border-transparent hover:border-border rounded"><ZoomOut size={16} /></button>
                                         <span className="text-xs font-medium w-10 text-center">{Math.round(scale * 100)}%</span>
-                                        <button onClick={() => setScale(Math.min(3, scale + 0.1))} className="p-1.5 hover:bg-white border border-transparent hover:border-[#dadada] rounded"><ZoomIn size={16} /></button>
-                                        <button onClick={() => setScale(1)} className="px-2 py-1 text-[10px] border border-[#dadada] rounded hover:bg-[#e8f0fe]">100%</button>
-                                        <button onClick={() => setScale(0.75)} className="px-2 py-1 text-[10px] border border-[#dadada] rounded hover:bg-[#e8f0fe]">75%</button>
-                                        <button onClick={() => setScale(0.5)} className="px-2 py-1 text-[10px] border border-[#dadada] rounded hover:bg-[#e8f0fe]">50%</button>
+                                        <button onClick={() => setScale(Math.min(3, scale + 0.1))} className="p-1.5 hover:bg-background border border-transparent hover:border-border rounded"><ZoomIn size={16} /></button>
+                                        <button onClick={() => setScale(1)} className="px-2 py-1 text-[10px] border border-border rounded hover:bg-accent">100%</button>
+                                        <button onClick={() => setScale(0.75)} className="px-2 py-1 text-[10px] border border-border rounded hover:bg-accent">75%</button>
+                                        <button onClick={() => setScale(0.5)} className="px-2 py-1 text-[10px] border border-border rounded hover:bg-accent">50%</button>
                                     </div>
                                 </div>
                                 <Divider />
                                 <button onClick={() => { const el = containerRef.current; if (el) { el.requestFullscreen?.(); } }}
-                                    className="flex flex-col items-center gap-1 px-4 py-2 hover:bg-white border border-transparent hover:border-[#dadada] rounded cursor-pointer">
-                                    <Maximize2 size={22} className="text-[#2b579a]" /><span className="text-[10px] font-medium">Full Screen</span>
+                                    className="flex flex-col items-center gap-1 px-4 py-2 hover:bg-background border border-transparent hover:border-border rounded cursor-pointer">
+                                    <Maximize2 size={22} className="text-primary" /><span className="text-[10px] font-medium">Full Screen</span>
                                 </button>
                             </div>
                         )}
@@ -645,31 +664,40 @@ const WordEditor: React.FC<WordEditorProps> = ({
 
             {/* ══════════════════ MAIN AREA ══════════════════ */}
             <div className="flex-1 flex overflow-hidden">
-                {/* Navigation Sidebar */}
+                {/* Navigation Sidebar - MS Word Style */}
                 {mode === 'edit' && showNavPane && (
-                    <div className="w-[200px] border-r border-[#dadada] bg-white flex flex-col shrink-0">
-                        <div className="p-3 border-b border-[#dadada]">
-                            <h4 className="text-sm font-semibold text-[#2b579a]">Navigation</h4>
-                            <div className="mt-2 relative">
-                                <input type="text" placeholder="Search document" className="w-full text-xs bg-[#f3f2f1] border border-[#dadada] rounded px-7 py-1 focus:outline-none focus:border-[#2b579a]" />
-                                <Search size={12} className="absolute left-2 top-1.5 text-[#605e5c]" />
+                    <div className="w-[220px] border-r border-border bg-card flex flex-col shrink-0">
+                        <div className="px-3 py-3">
+                            <h4 className="text-[13px] font-semibold text-primary mb-2 px-1">Navigation</h4>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    placeholder="Search document"
+                                    className="w-full text-xs bg-background border border-border rounded px-8 py-1.5 focus:outline-none focus:border-primary placeholder:text-muted-foreground/60 shadow-inner"
+                                />
+                                <Search size={14} className="absolute left-2.5 top-2 text-muted-foreground" />
                             </div>
                         </div>
-                        <div className="flex-1 overflow-y-auto">
-                            <div className="p-3 space-y-1">
-                                {pages.map((page, pi) => page.lines.filter(l => l.isHeading).map((heading, hi) => (
-                                    <button key={`${pi}-${hi}`} onClick={() => {
-                                        const lineIdx = page.lines.indexOf(heading);
-                                        setFocusedLine({ pageIdx: pi, lineIdx });
-                                    }} className="w-full flex gap-2 group cursor-pointer hover:bg-[#f3f2f1] p-1.5 rounded text-left">
-                                        <div className="w-1.5 h-1.5 mt-1.5 bg-[#2b579a] rounded-sm shrink-0" />
-                                        <span className="text-[11px] text-[#323130] truncate">{heading.text}</span>
-                                    </button>
-                                )))}
-                                {!pages.some(p => p.lines.some(l => l.isHeading)) && (
-                                    <div className="text-[10px] text-[#605e5c] italic p-2">No headings found. Use the Home tab to make a line a heading.</div>
-                                )}
-                            </div>
+                        <div className="flex-1 overflow-y-auto px-1">
+                            {pages.some(p => p.lines.some(l => l.isHeading)) ? (
+                                <div className="space-y-0.5">
+                                    {pages.map((page, pi) => page.lines.filter(l => l.isHeading).map((heading, hi) => (
+                                        <button key={`${pi}-${hi}`} onClick={() => {
+                                            const lineIdx = page.lines.indexOf(heading);
+                                            setFocusedLine({ pageIdx: pi, lineIdx });
+                                        }} className="w-full flex gap-2 group cursor-pointer hover:bg-muted px-3 py-2 rounded text-left transition-colors">
+                                            <div className="w-1.5 h-1.5 mt-1.5 bg-primary rounded-sm shrink-0" />
+                                            <span className="text-[11px] text-foreground line-clamp-1">{heading.text}</span>
+                                        </button>
+                                    )))}
+                                </div>
+                            ) : (
+                                <div className="px-4 py-6 text-center">
+                                    <p className="text-[11px] text-muted-foreground leading-relaxed italic">
+                                        No headings found. Use the Home tab to make a line a heading.
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -677,15 +705,15 @@ const WordEditor: React.FC<WordEditorProps> = ({
                 {/* Content Surface */}
                 <div ref={containerRef}
                     className={cn("flex-1 overflow-auto p-12 scroll-smooth flex flex-col items-center gap-12",
-                        mode === 'preview' ? "bg-[#525659]" : "bg-[#e6e6e6]"
+                        mode === 'preview' ? "bg-zinc-800" : "bg-neutral-200 dark:bg-black/40"
                     )}>
                     {/* Ruler */}
                     {mode === 'edit' && showRuler && (
-                        <div className="w-full max-w-[816px] h-6 bg-white border border-[#dadada] rounded flex items-center px-2 shrink-0 sticky top-0 z-10">
+                        <div className="w-full max-w-[816px] h-6 bg-background border border-border rounded flex items-center px-2 shrink-0 sticky top-0 z-10">
                             {Array.from({ length: 17 }, (_, i) => (
                                 <React.Fragment key={i}>
-                                    <span className="text-[8px] text-[#605e5c] font-mono">{i}</span>
-                                    {i < 16 && <div className="flex-1 border-r border-[#e0e0e0] h-3" />}
+                                    <span className="text-[8px] text-muted-foreground font-mono">{i}</span>
+                                    {i < 16 && <div className="flex-1 border-r border-border h-3" />}
                                 </React.Fragment>
                             ))}
                         </div>
@@ -697,9 +725,10 @@ const WordEditor: React.FC<WordEditorProps> = ({
                                 mode === 'preview' ? "shadow-[0_4px_20px_rgba(0,0,0,0.3)]" : "shadow-[0_2px_10px_rgba(0,0,0,0.15)] ring-1 ring-black/5"
                             )}
                             style={{
-                                width: `${page.width}px`, height: `${page.height}px`,
+                                width: `${orientation === 'portrait' ? page.width : page.height}px`,
+                                height: `${orientation === 'portrait' ? page.height : page.width}px`,
                                 transform: `scale(${scale})`, transformOrigin: 'top center',
-                                marginBottom: `${(page.height * scale) - page.height}px`,
+                                marginBottom: `${((orientation === 'portrait' ? page.height : page.width) * scale) - (orientation === 'portrait' ? page.height : page.width)}px`,
                                 backgroundColor: pageColor,
                                 padding: `${pagePadding}px`,
                             }}>
@@ -712,7 +741,7 @@ const WordEditor: React.FC<WordEditorProps> = ({
                                         onFocus={() => mode === 'edit' && setFocusedLine({ pageIdx: pi, lineIdx: li })}
                                         onBlur={(e) => { if (mode === 'edit') onUpdateLine(pi, li, e.currentTarget.textContent || ''); }}
                                         className={cn(
-                                            "absolute outline-none px-1 -mx-1 rounded transition-all text-black",
+                                            "absolute outline-none px-1 -mx-1 rounded transition-all text-foreground",
                                             mode === 'edit' && "hover:bg-blue-100/50 hover:ring-1 hover:ring-blue-300 focus:bg-blue-100 focus:ring-1 focus:ring-blue-400",
                                             focusedLine?.pageIdx === pi && focusedLine?.lineIdx === li && "ring-1 ring-blue-400 bg-blue-50/50"
                                         )}
@@ -734,7 +763,7 @@ const WordEditor: React.FC<WordEditorProps> = ({
                             })}
 
                             {mode === 'edit' && (
-                                <div className="absolute -bottom-6 left-0 right-0 text-center text-[10px] text-[#605e5c] select-none">
+                                <div className="absolute -bottom-6 left-0 right-0 text-center text-[10px] text-muted-foreground select-none">
                                     Page {pi + 1} of {pages.length}
                                 </div>
                             )}
@@ -745,7 +774,7 @@ const WordEditor: React.FC<WordEditorProps> = ({
 
             {/* ══════════════════ STATUS BAR ══════════════════ */}
             {mode === 'edit' && (
-                <div className="h-[22px] bg-[#2b579a] flex items-center justify-between px-3 text-white text-[10px] shrink-0 select-none">
+                <div className="h-[22px] bg-[#2b579a] dark:bg-[#1a3a6b] flex items-center justify-between px-3 text-white text-[10px] shrink-0 select-none">
                     <div className="flex items-center gap-4">
                         <span>Page {selectedPage + 1} of {pages.length}</span>
                         <span>{pages.reduce((acc, p) => acc + p.lines.reduce((lacc, l) => lacc + l.text.split(/\s+/).filter(Boolean).length, 0), 0)} words</span>
@@ -769,15 +798,15 @@ const WordEditor: React.FC<WordEditorProps> = ({
                 const stats = getWordCountStats();
                 return (
                     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50" onClick={() => setShowWordCount(false)}>
-                        <div className="bg-white rounded-lg shadow-2xl p-6 w-80 text-[#323130]" onClick={e => e.stopPropagation()}>
-                            <h3 className="text-base font-bold mb-4 flex items-center gap-2"><BarChart3 size={18} className="text-[#2b579a]" /> Word Count</h3>
+                        <div className="bg-popover rounded-lg shadow-2xl p-6 w-80 text-foreground" onClick={e => e.stopPropagation()}>
+                            <h3 className="text-base font-bold mb-4 flex items-center gap-2"><BarChart3 size={18} className="text-primary" /> Word Count</h3>
                             <div className="space-y-2 text-sm">
-                                <div className="flex justify-between py-1.5 border-b border-[#f0f0f0]"><span>Pages</span><span className="font-semibold">{stats.pages}</span></div>
-                                <div className="flex justify-between py-1.5 border-b border-[#f0f0f0]"><span>Words</span><span className="font-semibold">{stats.words}</span></div>
-                                <div className="flex justify-between py-1.5 border-b border-[#f0f0f0]"><span>Characters</span><span className="font-semibold">{stats.chars}</span></div>
+                                <div className="flex justify-between py-1.5 border-b border-border"><span>Pages</span><span className="font-semibold">{stats.pages}</span></div>
+                                <div className="flex justify-between py-1.5 border-b border-border"><span>Words</span><span className="font-semibold">{stats.words}</span></div>
+                                <div className="flex justify-between py-1.5 border-b border-border"><span>Characters</span><span className="font-semibold">{stats.chars}</span></div>
                                 <div className="flex justify-between py-1.5"><span>Lines</span><span className="font-semibold">{stats.lines}</span></div>
                             </div>
-                            <button onClick={() => setShowWordCount(false)} className="mt-5 w-full py-2 bg-[#2b579a] text-white text-sm font-medium rounded hover:bg-[#1e3f73] transition-colors">Close</button>
+                            <button onClick={() => setShowWordCount(false)} className="mt-5 w-full py-2 bg-primary text-primary-foreground text-sm font-medium rounded hover:bg-primary/90 transition-colors">Close</button>
                         </div>
                     </div>
                 );
@@ -786,25 +815,25 @@ const WordEditor: React.FC<WordEditorProps> = ({
             {/* Find & Replace Dialog */}
             {showFindReplace && (
                 <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50" onClick={() => setShowFindReplace(false)}>
-                    <div className="bg-white rounded-lg shadow-2xl p-6 w-96 text-[#323130]" onClick={e => e.stopPropagation()}>
-                        <h3 className="text-base font-bold mb-4 flex items-center gap-2"><Replace size={18} className="text-[#2b579a]" /> Find & Replace</h3>
+                    <div className="bg-popover rounded-lg shadow-2xl p-6 w-96 text-foreground" onClick={e => e.stopPropagation()}>
+                        <h3 className="text-base font-bold mb-4 flex items-center gap-2"><Replace size={18} className="text-primary" /> Find & Replace</h3>
                         <div className="space-y-3">
                             <div>
-                                <label className="text-xs font-medium text-[#605e5c] block mb-1">Find:</label>
+                                <label className="text-xs font-medium text-muted-foreground block mb-1">Find:</label>
                                 <input type="text" value={findText} onChange={e => setFindText(e.target.value)}
-                                    className="w-full border border-[#dadada] rounded px-3 py-2 text-sm focus:outline-none focus:border-[#2b579a]"
+                                    className="w-full bg-background border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary placeholder:text-muted-foreground/50"
                                     placeholder="Text to find..." />
                             </div>
                             <div>
-                                <label className="text-xs font-medium text-[#605e5c] block mb-1">Replace with:</label>
+                                <label className="text-xs font-medium text-muted-foreground block mb-1">Replace with:</label>
                                 <input type="text" value={replaceText} onChange={e => setReplaceText(e.target.value)}
-                                    className="w-full border border-[#dadada] rounded px-3 py-2 text-sm focus:outline-none focus:border-[#2b579a]"
+                                    className="w-full bg-background border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary placeholder:text-muted-foreground/50"
                                     placeholder="Replacement text..." />
                             </div>
                         </div>
                         <div className="mt-5 flex gap-2">
-                            <button onClick={handleFindReplace} className="flex-1 py-2 bg-[#2b579a] text-white text-sm font-medium rounded hover:bg-[#1e3f73] transition-colors">Replace All</button>
-                            <button onClick={() => setShowFindReplace(false)} className="flex-1 py-2 border border-[#dadada] text-sm font-medium rounded hover:bg-[#f3f2f1] transition-colors">Cancel</button>
+                            <button onClick={handleFindReplace} className="flex-1 py-2 bg-primary text-primary-foreground text-sm font-medium rounded hover:bg-primary/90 transition-colors">Replace All</button>
+                            <button onClick={() => setShowFindReplace(false)} className="flex-1 py-2 border border-border text-sm font-medium rounded hover:bg-muted transition-colors">Cancel</button>
                         </div>
                     </div>
                 </div>

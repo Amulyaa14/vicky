@@ -285,7 +285,7 @@ const VideoStudio: React.FC = () => {
                 <span className="text-xl">⚠️</span>
                 <p>Video Studio works best on a <strong>desktop browser</strong>. The editing layout may be cramped on small screens.</p>
             </div>
-            <div className="flex flex-col h-screen bg-[#0a0a0f] text-gray-200 overflow-hidden" style={{ fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif" }}>
+            <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden" style={{ fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif" }}>
                 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
                 {/* Inline keyframes */}
@@ -298,20 +298,20 @@ const VideoStudio: React.FC = () => {
         input[type=range] { -webkit-appearance: none; height: 3px; border-radius: 2px; background: #1e1e2e; outline: none; }
         input[type=range]::-webkit-slider-runnable-track { background: linear-gradient(90deg, #7c3aed 0%, #1e1e2e 100%); height: 3px; border-radius: 2px; }
         .scrollbar-thin::-webkit-scrollbar { height: 5px; width: 5px; }
-        .scrollbar-thin::-webkit-scrollbar-thumb { background: #2a2a3e; border-radius: 3px; }
-        .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #3a3a5e; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: hsl(var(--muted)); border-radius: 3px; }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: hsl(var(--accent)); }
         .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
-        .studio-card { background: rgba(20,20,35,0.8); border: 1px solid rgba(255,255,255,0.06); backdrop-filter: blur(12px); }
+        .studio-card { background: hsl(var(--card) / 0.8); border: 1px solid hsl(var(--border) / 0.3); backdrop-filter: blur(12px); }
       `}</style>
 
                 {/* Hidden file input */}
                 <input ref={fileInputRef} type="file" accept="video/*,image/*,audio/*" multiple className="hidden" onChange={handleFileUpload} />
 
                 {/* ═══════ TOP TOOLBAR ═══════ */}
-                <div className="h-12 bg-[#12121f] border-b border-white/[0.06] flex items-center justify-between shrink-0 z-20 px-3 sm:px-5 overflow-x-auto">
+                <div className="h-12 bg-muted/30 border-b border-border/40 flex items-center justify-between shrink-0 z-20 px-3 sm:px-5 overflow-x-auto">
                     <div className="flex items-center gap-3 sm:gap-4 shrink-0">
                         <button onClick={() => setShowLeftPanel(!showLeftPanel)}
-                            className="md:hidden p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 transition-colors shrink-0" title="Toggle panel">
+                            className="md:hidden p-1.5 rounded-lg bg-muted hover:bg-muted/80 text-muted-foreground transition-colors shrink-0" title="Toggle panel">
                             <Layers size={16} />
                         </button>
                         <div className="flex items-center gap-2">
@@ -320,14 +320,14 @@ const VideoStudio: React.FC = () => {
                             </div>
                             <span className="font-bold text-sm text-white whitespace-nowrap tracking-wide">Studio</span>
                         </div>
-                        <div className="hidden sm:flex items-center gap-1 ml-2 border-l border-white/10 pl-3">
-                            <button className="p-1.5 rounded-lg hover:bg-white/5 text-gray-500 hover:text-gray-300 transition-colors" title="Undo"><Undo2 size={15} /></button>
-                            <button className="p-1.5 rounded-lg hover:bg-white/5 text-gray-600 transition-colors" title="Redo"><Redo2 size={15} /></button>
+                        <div className="hidden sm:flex items-center gap-1 ml-2 border-l border-border/60 pl-3">
+                            <button className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Undo"><Undo2 size={15} /></button>
+                            <button className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground transition-colors" title="Redo"><Redo2 size={15} /></button>
                         </div>
                     </div>
                     <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-2">
                         <button onClick={() => setShowEffects(!showEffects)}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${showEffects ? 'bg-violet-500/20 text-violet-300 ring-1 ring-violet-500/30' : 'hover:bg-white/5 text-gray-400'}`}>
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${showEffects ? 'bg-primary/20 text-primary ring-1 ring-primary/30' : 'hover:bg-muted text-muted-foreground'}`}>
                             <Wand2 size={13} /> <span className="hidden sm:inline">Effects</span>
                         </button>
                         <button onClick={() => setFadeIn(!fadeIn)}
@@ -338,7 +338,7 @@ const VideoStudio: React.FC = () => {
                             className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${fadeOut ? 'bg-blue-500/20 text-blue-300 ring-1 ring-blue-500/30' : 'hover:bg-white/5 text-gray-400'}`}>
                             Fade Out
                         </button>
-                        <div className="w-px h-5 bg-white/10 mx-1 hidden sm:block" />
+                        <div className="w-px h-5 bg-border/60 mx-1 hidden sm:block" />
                         <button onClick={() => { setExportOpen(true); exporter.resetExport(); }}
                             className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 rounded-lg text-xs font-bold transition-all text-white whitespace-nowrap shadow-lg shadow-violet-500/20 hover:shadow-violet-500/30">
                             <Download size={13} /> Export
@@ -354,14 +354,14 @@ const VideoStudio: React.FC = () => {
                     <div className={`
                     ${showLeftPanel ? 'flex' : 'hidden'} md:flex
                     flex-col w-[85vw] sm:w-72 md:w-72
-                    bg-[#10101a] border-r border-white/[0.06] shrink-0
+                    bg-muted/10 border-r border-border/40 shrink-0
                     absolute md:relative z-30 top-0 left-0 h-full md:h-auto
                 `}>
                         {/* tabs */}
-                        <div className="flex border-b border-white/[0.06] shrink-0">
+                        <div className="flex border-b border-border/40 shrink-0">
                             {([['media', 'My Media', FolderOpen], ['library', 'Library', Search], ['templates', 'Templates', LayoutTemplate], ['transitions', 'Transitions', ArrowLeftRight]] as const).map(([key, label, Icon]) => (
                                 <button key={key} onClick={() => setLeftTab(key as LeftTab)}
-                                    className={`flex-1 py-2.5 text-[10px] font-semibold tracking-wide transition-all flex flex-col items-center gap-1 ${leftTab === key ? 'text-violet-400 border-b-2 border-violet-400 bg-violet-500/5' : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.02]'}`}>
+                                    className={`flex-1 py-2.5 text-[10px] font-semibold tracking-wide transition-all flex flex-col items-center gap-1 ${leftTab === key ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}>
                                     <Icon size={13} />
                                     {label}
                                 </button>
@@ -396,7 +396,7 @@ const VideoStudio: React.FC = () => {
                                                     if (item.type === 'video') setActiveVideoUrl(item.url);
                                                     addToTimeline(item);
                                                 }}
-                                                className="group relative aspect-video rounded-xl overflow-hidden border border-white/[0.08] cursor-grab hover:ring-2 ring-violet-500/60 transition-all bg-white/[0.03] hover:bg-white/[0.06]">
+                                                className="group relative aspect-video rounded-xl overflow-hidden border border-border/40 cursor-grab hover:ring-2 ring-primary/60 transition-all bg-muted/20 hover:bg-muted/40">
                                                 {item.thumbnailUrl ? (
                                                     <img src={item.thumbnailUrl} alt={item.name} className="w-full h-full object-cover" />
                                                 ) : (
@@ -439,12 +439,12 @@ const VideoStudio: React.FC = () => {
                                                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                                                 <input type="text" value={libraryQuery} onChange={e => handleLibrarySearch(e.target.value)}
                                                     placeholder="Search stock assets..."
-                                                    className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-violet-500" />
+                                                    className="w-full bg-muted/20 border border-border/40 rounded-lg pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
                                             </div>
                                             <div className="flex gap-1">
                                                 {(['video', 'image'] as const).map(t => (
                                                     <button key={t} onClick={() => { setLibraryType(t); if (libraryQuery.trim()) library.search(libraryQuery, t); }}
-                                                        className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-colors ${libraryType === t ? 'bg-violet-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+                                                        className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-colors ${libraryType === t ? 'bg-primary text-primary-foreground' : 'bg-muted/20 text-muted-foreground hover:bg-muted/40'}`}>
                                                         {t === 'video' ? '🎬 Videos' : '🖼️ Images'}
                                                     </button>
                                                 ))}
@@ -461,7 +461,7 @@ const VideoStudio: React.FC = () => {
                                                 {library.results.map(item => (
                                                     <button key={item.id} onClick={() => handleLibraryDownload(item)}
                                                         disabled={downloadingId === item.id}
-                                                        className="relative aspect-video rounded-lg overflow-hidden border border-white/10 hover:ring-2 ring-violet-500 transition-all group">
+                                                        className="relative aspect-video rounded-lg overflow-hidden border border-border/40 hover:ring-2 ring-primary transition-all group">
                                                         <img src={item.thumbnailUrl} alt={item.name} className="w-full h-full object-cover" />
                                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                                             {downloadingId === item.id ? <Loader2 size={18} className="animate-spin text-white" /> : <Plus size={18} className="text-white" />}
@@ -513,13 +513,13 @@ const VideoStudio: React.FC = () => {
                                 <div className="space-y-2">
                                     {TEMPLATES.map((tpl, i) => (
                                         <button key={i} onClick={() => loadTemplate(tpl)}
-                                            className="w-full p-3 rounded-lg text-left text-xs transition-all border bg-white/5 border-white/5 hover:bg-violet-600/20 hover:border-violet-500/30 group">
+                                            className="w-full p-3 rounded-lg text-left text-xs transition-all border border-border/40 bg-muted/20 hover:bg-primary/10 hover:border-primary/30 group">
                                             <div className="flex items-center gap-2 mb-1.5">
                                                 <span className="text-lg">{tpl.emoji}</span>
-                                                <span className="font-bold text-white">{tpl.name}</span>
-                                                <span className="ml-auto text-[9px] text-gray-500 bg-white/5 px-1.5 py-0.5 rounded">{tpl.aspect}</span>
+                                                <span className="font-bold text-foreground">{tpl.name}</span>
+                                                <span className="ml-auto text-[9px] text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded">{tpl.aspect}</span>
                                             </div>
-                                            <p className="text-[10px] text-gray-500">{tpl.category} · {tpl.clips.length} clips · {tpl.duration}s</p>
+                                            <p className="text-[10px] text-muted-foreground">{tpl.category} · {tpl.clips.length} clips · {tpl.duration}s</p>
                                             <div className="flex gap-1 mt-2">
                                                 {tpl.clips.map((c, j) => (
                                                     <div key={j} className="h-2 rounded-full flex-1" style={{ background: c.color, opacity: 0.6 }} />
@@ -536,11 +536,11 @@ const VideoStudio: React.FC = () => {
                                     <p className="text-[10px] text-gray-500 mb-2">Click "+" between clips on the timeline to add a transition, or drag from here.</p>
                                     {TRANSITION_TYPES.map(tr => (
                                         <div key={tr.name}
-                                            className="flex items-center gap-3 p-2.5 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
+                                            className="flex items-center gap-3 p-2.5 rounded-lg bg-muted/20 border border-border/40 hover:bg-muted/40 transition-colors">
                                             <span className="text-xl w-8 text-center">{tr.icon}</span>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-xs font-bold text-white">{tr.name}</p>
-                                                <p className="text-[9px] text-gray-500">{tr.desc}</p>
+                                                <p className="text-xs font-bold text-foreground">{tr.name}</p>
+                                                <p className="text-[9px] text-muted-foreground">{tr.desc}</p>
                                             </div>
                                         </div>
                                     ))}
@@ -553,10 +553,10 @@ const VideoStudio: React.FC = () => {
                     <div className="flex-1 flex flex-col min-w-0">
                         {/* Effects bar */}
                         {showEffects && (
-                            <div className="bg-[#12121f] border-b border-white/[0.06] px-4 py-2.5 flex gap-1.5 flex-wrap shrink-0">
+                            <div className="bg-muted/30 border-b border-border/40 px-4 py-2.5 flex gap-1.5 flex-wrap shrink-0">
                                 {EFFECTS.map((fx, i) => (
                                     <button key={i} onClick={() => setActiveEffect(i)}
-                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-all ${activeEffect === i ? 'bg-violet-500/20 text-violet-300 ring-1 ring-violet-500/30 shadow-sm shadow-violet-500/10' : 'hover:bg-white/5 text-gray-500 hover:text-gray-300'}`}>
+                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-all ${activeEffect === i ? 'bg-primary/20 text-primary ring-1 ring-primary/30 shadow-sm shadow-primary/10' : 'hover:bg-muted text-muted-foreground hover:text-foreground'}`}>
                                         {fx.name}
                                     </button>
                                 ))}
@@ -564,7 +564,7 @@ const VideoStudio: React.FC = () => {
                         )}
 
                         {/* Video preview */}
-                        <div className="flex-1 flex items-center justify-center bg-[#08080e] relative overflow-hidden">
+                        <div className="flex-1 flex items-center justify-center bg-muted/20 relative overflow-hidden">
                             {/* Subtle background pattern */}
                             <div className="absolute inset-0 opacity-[0.015]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '32px 32px' }} />
                             {activeVideoUrl ? (
@@ -574,8 +574,8 @@ const VideoStudio: React.FC = () => {
                                         style={{ filter: videoFilter }} playsInline onClick={togglePlay} />
                                     {!isPlaying && (
                                         <button onClick={togglePlay} className="absolute inset-0 flex items-center justify-center group">
-                                            <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center hover:scale-110 transition-transform shadow-2xl shadow-violet-500/30 group-hover:shadow-violet-500/50">
-                                                <Play size={26} fill="white" className="text-white ml-1" />
+                                            <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center hover:scale-110 transition-transform shadow-2xl shadow-primary/30 group-hover:shadow-primary/50">
+                                                <Play size={26} fill="currentColor" className="text-primary-foreground ml-1" />
                                             </div>
                                         </button>
                                     )}
@@ -602,13 +602,13 @@ const VideoStudio: React.FC = () => {
                         </div>
 
                         {/* Player controls */}
-                        <div className="bg-[#12121f] border-t border-white/[0.06] px-4 py-2 flex items-center gap-3 shrink-0">
-                            <button onClick={togglePlay} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-gray-300 hover:text-white">
+                        <div className="bg-muted/30 border-t border-border/40 px-4 py-2 flex items-center gap-3 shrink-0">
+                            <button onClick={togglePlay} className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground">
                                 {isPlaying ? <Pause size={17} /> : <Play size={17} />}
                             </button>
-                            <span className="text-[10px] font-medium text-gray-500 w-24 tabular-nums">{fmt(currentTime)} / {fmt(duration)}</span>
+                            <span className="text-[10px] font-medium text-muted-foreground w-24 tabular-nums">{fmt(currentTime)} / {fmt(duration)}</span>
                             <input type="range" min={0} max={duration || 1} step={0.01} value={currentTime} onChange={seek} className="flex-1" />
-                            <button onClick={() => setMuted(!muted)} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white">
+                            <button onClick={() => setMuted(!muted)} className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground">
                                 {muted ? <VolumeX size={15} /> : <Volume2 size={15} />}
                             </button>
                             <input type="range" min={0} max={1} step={0.01} value={muted ? 0 : volume} onChange={changeVolume} className="w-20" />
@@ -616,11 +616,11 @@ const VideoStudio: React.FC = () => {
                     </div>
 
                     {/* ──── RIGHT PANEL: CLIP PROPERTIES ──── */}
-                    <div className="w-64 bg-[#10101a] border-l border-white/[0.06] flex flex-col shrink-0 overflow-y-auto">
-                        <div className="flex border-b border-white/[0.06] shrink-0">
+                    <div className="w-64 bg-muted/10 border-l border-border/40 flex flex-col shrink-0 overflow-y-auto">
+                        <div className="flex border-b border-border/40 shrink-0">
                             {([['properties', 'Properties'], ['adjust', 'Adjust']] as const).map(([key, label]) => (
                                 <button key={key} onClick={() => setRightTab(key as 'properties' | 'adjust')}
-                                    className={`flex-1 py-3 text-[10px] font-semibold tracking-wide transition-all ${rightTab === key ? 'text-violet-400 border-b-2 border-violet-400 bg-violet-500/5' : 'text-gray-500 hover:text-gray-300'}`}>
+                                    className={`flex-1 py-3 text-[10px] font-semibold tracking-wide transition-all ${rightTab === key ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-muted-foreground hover:text-foreground'}`}>
                                     {label === 'Properties' ? <Eye size={11} className="inline mr-1" /> : <Sliders size={11} className="inline mr-1" />}
                                     {label}
                                 </button>
@@ -631,36 +631,36 @@ const VideoStudio: React.FC = () => {
                                 {rightTab === 'properties' ? (
                                     <>
                                         <div>
-                                            <label className="text-[10px] text-gray-500 block mb-1">Clip Name</label>
-                                            <p className="text-xs font-bold text-white truncate">{selectedClip.label}</p>
+                                            <label className="text-[10px] text-muted-foreground block mb-1">Clip Name</label>
+                                            <p className="text-xs font-bold text-foreground truncate">{selectedClip.label}</p>
                                         </div>
                                         <div>
-                                            <label className="text-[10px] text-gray-500 block mb-1">Type</label>
-                                            <p className="text-xs text-violet-400 capitalize">{selectedClip.type}</p>
+                                            <label className="text-[10px] text-muted-foreground block mb-1">Type</label>
+                                            <p className="text-xs text-primary capitalize">{selectedClip.type}</p>
                                         </div>
                                         <div className="flex justify-between items-center">
                                             <div>
-                                                <label className="text-[10px] text-gray-500 block mb-0.5">Duration</label>
-                                                <p className="text-xs text-white">{fmt(selectedClip.endTrim - selectedClip.startTrim)}</p>
+                                                <label className="text-[10px] text-muted-foreground block mb-0.5">Duration</label>
+                                                <p className="text-xs text-foreground">{fmt(selectedClip.endTrim - selectedClip.startTrim)}</p>
                                             </div>
                                         </div>
 
                                         <div>
-                                            <div className="flex justify-between text-[10px] text-gray-500 mb-1">
+                                            <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
                                                 <span>Speed ({selectedClip.speed || 1}x)</span>
-                                                {selectedClip.speed !== 1 && <button onClick={() => updateClipSpeed(selectedClip.id, 1)} className="text-violet-400 hover:text-violet-300">Reset</button>}
+                                                {selectedClip.speed !== 1 && <button onClick={() => updateClipSpeed(selectedClip.id, 1)} className="text-primary hover:text-primary/80">Reset</button>}
                                             </div>
                                             <input type="range" min={0.25} max={4} step={0.25} value={selectedClip.speed || 1}
                                                 onChange={e => updateClipSpeed(selectedClip.id, parseFloat(e.target.value))} className="w-full" />
                                         </div>
 
                                         <div>
-                                            <label className="text-[10px] text-gray-500 block mb-1">Trim Start ({fmt(selectedClip.startTrim)})</label>
+                                            <label className="text-[10px] text-muted-foreground block mb-1">Trim Start ({fmt(selectedClip.startTrim)})</label>
                                             <input type="range" min={0} max={selectedClip.duration} step={0.1} value={selectedClip.startTrim}
                                                 onChange={e => updateClipTrim(selectedClip.id, parseFloat(e.target.value), selectedClip.endTrim)} className="w-full" />
                                         </div>
                                         <div>
-                                            <label className="text-[10px] text-gray-500 block mb-1">Trim End ({fmt(selectedClip.endTrim)})</label>
+                                            <label className="text-[10px] text-muted-foreground block mb-1">Trim End ({fmt(selectedClip.endTrim)})</label>
                                             <input type="range" min={0} max={selectedClip.duration} step={0.1} value={selectedClip.endTrim}
                                                 onChange={e => updateClipTrim(selectedClip.id, selectedClip.startTrim, parseFloat(e.target.value))} className="w-full" />
                                         </div>
@@ -672,8 +672,8 @@ const VideoStudio: React.FC = () => {
                                 ) : (
                                     <>
                                         <div className="flex justify-between items-center mb-2">
-                                            <span className="text-xs font-bold text-gray-300">Color Adjust</span>
-                                            <button onClick={() => resetAdjustments(selectedClip.id)} className="text-[10px] text-gray-500 hover:text-violet-300 flex items-center gap-1 bg-white/[0.03] hover:bg-white/[0.06] px-2 py-1 rounded-lg transition-colors">
+                                            <span className="text-xs font-bold text-foreground/80">Color Adjust</span>
+                                            <button onClick={() => resetAdjustments(selectedClip.id)} className="text-[10px] text-muted-foreground hover:text-primary flex items-center gap-1 bg-muted/20 hover:bg-muted/40 px-2 py-1 rounded-lg transition-colors">
                                                 <RotateCcw size={10} /> Reset
                                             </button>
                                         </div>
@@ -693,8 +693,8 @@ const VideoStudio: React.FC = () => {
                                                 return (
                                                     <div key={adj.key} className="space-y-0.5">
                                                         <div className="flex justify-between text-[10px]">
-                                                            <span className="text-gray-400">{adj.label}</span>
-                                                            <span className="text-violet-400 font-mono">{val}</span>
+                                                            <span className="text-muted-foreground">{adj.label}</span>
+                                                            <span className="text-primary font-mono">{val}</span>
                                                         </div>
                                                         <input type="range" min={adj.min} max={adj.max} step={1} value={val}
                                                             onChange={e => updateClipAdjustment(selectedClip.id, adj.key as keyof ClipAdjustments, parseFloat(e.target.value))}
@@ -710,38 +710,38 @@ const VideoStudio: React.FC = () => {
                         ) : (
                             <div className="flex-1 flex items-center justify-center text-center p-4">
                                 <div>
-                                    <Layers size={28} className="mx-auto text-gray-700 mb-2" />
-                                    <p className="text-[10px] text-gray-600">Select a clip on the timeline to view properties & adjustments</p>
+                                    <Layers size={28} className="mx-auto text-muted-foreground/30 mb-2" />
+                                    <p className="text-[10px] text-muted-foreground">Select a clip on the timeline to view properties & adjustments</p>
                                 </div>
                             </div>
                         )}
-                        <div className="mt-auto p-3 border-t border-white/[0.06] space-y-2 shrink-0">
+                        <div className="mt-auto p-3 border-t border-border/40 space-y-2 shrink-0">
                             <div className="flex justify-between text-[10px]">
-                                <span className="text-gray-500">Global Effect</span>
-                                <span className="text-violet-300 font-semibold">{EFFECTS[activeEffect].name}</span>
+                                <span className="text-muted-foreground">Global Effect</span>
+                                <span className="text-primary font-semibold">{EFFECTS[activeEffect].name}</span>
                             </div>
                             <div className="flex justify-between text-[10px]">
-                                <span className="text-gray-500">Clips</span>
-                                <span className="text-violet-300 font-semibold">{clips.length}</span>
+                                <span className="text-muted-foreground">Clips</span>
+                                <span className="text-primary font-semibold">{clips.length}</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* ═══════ TIMELINE ═══════ */}
-                <div className={`h-40 bg-[#0e0e18] border-t flex flex-col shrink-0 transition-colors ${dragOverTimeline ? 'border-violet-500/50 bg-violet-950/20' : 'border-white/[0.06]'}`}
+                <div className={`h-40 bg-muted/20 border-t flex flex-col shrink-0 transition-colors ${dragOverTimeline ? 'border-primary/50 bg-primary/10' : 'border-border/40'}`}
                     onDrop={handleTimelineDrop}
                     onDragOver={handleTimelineDragOver}
                     onDragLeave={() => setDragOverTimeline(false)}>
-                    <div className="h-8 bg-[#12121f] border-b border-white/[0.06] flex items-center px-4 gap-3 shrink-0">
-                        <Scissors size={12} className="text-gray-500" />
-                        <span className="text-[10px] font-semibold text-gray-400 tracking-wide">TIMELINE</span>
+                    <div className="h-8 bg-muted/40 border-b border-border/40 flex items-center px-4 gap-3 shrink-0">
+                        <Scissors size={12} className="text-muted-foreground" />
+                        <span className="text-[10px] font-semibold text-muted-foreground tracking-wide">TIMELINE</span>
                         <div className="flex-1" />
-                        <span className="text-[10px] text-gray-600 font-medium">{clips.length} clip{clips.length !== 1 ? 's' : ''}</span>
+                        <span className="text-[10px] text-muted-foreground/60 font-medium">{clips.length} clip{clips.length !== 1 ? 's' : ''}</span>
                     </div>
                     <div className="flex-1 flex items-center overflow-x-auto scrollbar-thin px-4 gap-0">
                         {clips.length === 0 && (
-                            <p className="text-[10px] text-gray-600 mx-auto">
+                            <p className="text-[10px] text-muted-foreground/60 mx-auto">
                                 {dragOverTimeline ? '📥 Drop here to add to timeline' : 'Add media from the left panel or drag & drop here'}
                             </p>
                         )}
@@ -785,13 +785,13 @@ const VideoStudio: React.FC = () => {
 
                                             {/* transition picker popup */}
                                             {transitionPicker === clip.id && (
-                                                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-[#222] border border-white/10 rounded-xl p-3 shadow-2xl z-30 w-52">
+                                                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-popover border border-border/40 rounded-xl p-3 shadow-2xl z-30 w-52">
                                                     <p className="text-[9px] text-gray-500 font-bold mb-2 text-center tracking-wider">TRANSITION</p>
                                                     <div className="max-h-48 overflow-y-auto scrollbar-thin space-y-0.5">
                                                         {TRANSITION_TYPES.map(opt => (
                                                             <button key={opt.name}
                                                                 onClick={() => setTransition(clip.id, opt.name, trans?.duration ?? 0.5)}
-                                                                className={`flex items-center gap-2 w-full text-left px-2.5 py-1.5 rounded-lg text-[10px] font-semibold transition-colors ${trans?.type === opt.name ? 'bg-blue-600 text-white' : 'hover:bg-white/10 text-gray-400'}`}>
+                                                                className={`flex items-center gap-2 w-full text-left px-2.5 py-1.5 rounded-lg text-[10px] font-semibold transition-colors ${trans?.type === opt.name ? 'bg-primary text-primary-foreground' : 'hover:bg-muted text-muted-foreground'}`}>
                                                                 <span className="text-sm">{opt.icon}</span> {opt.name}
                                                             </button>
                                                         ))}

@@ -325,10 +325,10 @@ const VideoTools = () => {
         return (
             <div className="pb-20">
                 <div className="container px-4 pt-12 text-center max-w-5xl mx-auto">
-                    <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-pink-400 to-rose-400 bg-clip-text text-transparent">
+                    <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent">
                         Video Studio
                     </h1>
-                    <p className="text-gray-400 mb-8">Choose an action for your video</p>
+                    <p className="text-muted-foreground mb-8">Choose an action for your video</p>
 
                     {message && (
                         <div className="mb-4 px-4 py-2 bg-green-500/20 text-green-400 rounded-lg text-sm">
@@ -336,8 +336,8 @@ const VideoTools = () => {
                         </div>
                     )}
 
-                    <div className="mt-8 p-8 glass-card rounded-3xl min-h-[300px]">
-                        <p className="text-gray-400 mb-6 truncate max-w-md mx-auto">{file.name}</p>
+                    <div className="mt-8 p-8 bg-card border border-border shadow-sm rounded-3xl min-h-[300px]">
+                        <p className="text-muted-foreground mb-6 truncate max-w-md mx-auto">{file.name}</p>
                         <div className="flex flex-wrap justify-center gap-4 mb-8">
                             <button
                                 onClick={() => setViewMode('preview')}
@@ -355,22 +355,22 @@ const VideoTools = () => {
                             </button>
                             <button
                                 onClick={handleDownload}
-                                className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 rounded-full text-sm font-bold transition-all"
+                                className="flex items-center gap-2 px-6 py-3 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-full text-sm font-bold transition-all"
                             >
                                 <Download size={18} />
                                 Download Original
                             </button>
                         </div>
 
-                        <div className="pt-8 border-t border-white/10 max-w-xl mx-auto text-left">
-                            <h3 className="text-lg font-bold mb-4">Quick Convert & Download</h3>
+                        <div className="pt-8 border-t border-border max-w-xl mx-auto text-left">
+                            <h3 className="text-lg font-bold mb-4 text-foreground">Quick Convert & Download</h3>
                             <div className="grid sm:grid-cols-2 gap-4 mb-6">
                                 <div>
-                                    <label className="block text-sm text-gray-400 mb-2">Format</label>
+                                    <label className="block text-sm text-muted-foreground mb-2">Format</label>
                                     <select
                                         value={convertFormat}
                                         onChange={e => setConvertFormat(e.target.value)}
-                                        className="w-full bg-[#1a1a1a] border border-white/10 rounded-lg px-4 py-3 text-white focus:border-pink-500 focus:ring-1 focus:ring-pink-500 outline-none transition-all cursor-pointer"
+                                        className="w-full bg-background border border-border rounded-lg px-4 py-3 text-foreground focus:border-pink-500 focus:ring-1 focus:ring-pink-500 outline-none transition-all cursor-pointer"
                                     >
                                         <option value="mp4">MP4</option>
                                         <option value="webm">WebM</option>
@@ -379,11 +379,11 @@ const VideoTools = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm text-gray-400 mb-2">Resolution</label>
+                                    <label className="block text-sm text-muted-foreground mb-2">Resolution</label>
                                     <select
                                         value={convertRes}
                                         onChange={e => setConvertRes(e.target.value)}
-                                        className="w-full bg-[#1a1a1a] border border-white/10 rounded-lg px-4 py-3 text-white focus:border-pink-500 focus:ring-1 focus:ring-pink-500 outline-none transition-all cursor-pointer"
+                                        className="w-full bg-background border border-border rounded-lg px-4 py-3 text-foreground focus:border-pink-500 focus:ring-1 focus:ring-pink-500 outline-none transition-all cursor-pointer"
                                     >
                                         <option value="auto">Auto (Original)</option>
                                         <option value="1080p">1080p</option>
@@ -409,7 +409,7 @@ const VideoTools = () => {
                             </div>
                         </div>
 
-                        <button onClick={handleBack} className="mt-8 text-sm text-gray-500 hover:text-white transition-colors">
+                        <button onClick={handleBack} className="mt-8 text-sm text-muted-foreground hover:text-foreground transition-colors">
                             ← Choose another video
                         </button>
                     </div>
@@ -421,10 +421,10 @@ const VideoTools = () => {
     return (
         <div className="pb-20">
             <div className="container px-4 pt-12 text-center max-w-5xl mx-auto">
-                <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-pink-400 to-rose-400 bg-clip-text text-transparent">
+                <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent">
                     Video Studio
                 </h1>
-                <p className="text-gray-400 mb-12">Professional video editing tools in your browser.</p>
+                <p className="text-muted-foreground mb-12">Professional video editing tools in your browser.</p>
 
                 <AdSpace className="mb-16 border-pink-500/20" />
 
@@ -433,20 +433,20 @@ const VideoTools = () => {
                         <div
                             key={tool.id}
                             onClick={() => setSelectedTool(tool.id)}
-                            className={`glass-card p-8 rounded-2xl transition-all cursor-pointer group text-left border ${selectedTool === tool.id ? 'border-pink-500 bg-pink-500/10' : 'border-slate-700 hover:bg-white/5'}`}
+                            className={`bg-card p-8 rounded-2xl transition-all cursor-pointer group text-left border shadow-sm ${selectedTool === tool.id ? 'border-pink-500 bg-pink-500/5' : 'border-border hover:bg-muted/50'}`}
                         >
-                            <div className="w-14 h-14 rounded-full bg-pink-500/20 text-pink-400 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                            <div className="w-14 h-14 rounded-full bg-pink-500/10 text-pink-600 dark:text-pink-400 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                                 <tool.icon size={28} />
                             </div>
-                            <h3 className="text-xl font-bold mb-2">{tool.name}</h3>
-                            <p className="text-gray-400 text-sm">{tool.desc}</p>
+                            <h3 className="text-xl font-bold mb-2 text-foreground">{tool.name}</h3>
+                            <p className="text-muted-foreground text-sm">{tool.desc}</p>
                         </div>
                     ))}
                 </div>
 
-                <div className="mt-8 p-8 glass-card rounded-3xl text-center min-h-[400px]">
+                <div className="mt-8 p-8 bg-card border border-border shadow-sm rounded-3xl text-center min-h-[400px]">
                     {isLoading && (
-                        <div className="flex items-center justify-center gap-2 mb-4 text-sm text-gray-400">
+                        <div className="flex items-center justify-center gap-2 mb-4 text-sm text-muted-foreground">
                             <Loader2 className="animate-spin" size={16} />
                             <span>{message || 'Loading video engine...'}</span>
                         </div>

@@ -257,10 +257,10 @@ const AITools = () => {
             <div className="container px-4 pt-8 sm:pt-12 max-w-6xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-8 sm:mb-12">
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-medium mb-4">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 text-xs font-medium mb-4">
                         <Sparkles size={12} /> AI-Powered Writing Tools
                     </div>
-                    <h1 className="text-3xl sm:text-5xl font-bold mb-3 bg-gradient-to-r from-purple-400 via-pink-400 to-purple-600 bg-clip-text text-transparent">
+                    <h1 className="text-3xl sm:text-5xl font-bold mb-3 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-800 dark:from-purple-400 dark:via-pink-400 dark:to-purple-600 bg-clip-text text-transparent">
                         AI Writing Assistant
                     </h1>
                     <p className="text-sm sm:text-base text-muted-foreground max-w-xl mx-auto">
@@ -275,12 +275,12 @@ const AITools = () => {
                     {/* ═══════ LEFT: Editor ═══════ */}
                     <div className="lg:col-span-2 flex flex-col gap-5">
                         {/* Editor Card */}
-                        <div className="bg-slate-900/60 backdrop-blur border border-slate-700/50 rounded-2xl overflow-hidden">
+                        <div className="bg-card backdrop-blur border border-border shadow-sm rounded-2xl overflow-hidden">
                             {/* Toolbar */}
-                            <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-slate-700/50 bg-slate-800/40">
+                            <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-border bg-muted/30">
                                 <div className="flex items-center gap-2">
-                                    <PenTool size={16} className="text-purple-400" />
-                                    <span className="text-sm font-semibold text-white">Editor</span>
+                                    <PenTool size={16} className="text-purple-500 dark:text-purple-400" />
+                                    <span className="text-sm font-semibold text-foreground">Editor</span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                     {/* Primary Actions */}
@@ -294,18 +294,18 @@ const AITools = () => {
                                         {isBusy && action === 'Fix Grammar' ? <Loader2 size={11} className="animate-spin" /> : <CheckCircle2 size={11} />}
                                         Fix Grammar
                                     </button>
-                                    <div className="w-px h-5 bg-slate-600 mx-1" />
+                                    <div className="w-px h-5 bg-border mx-1" />
                                     {/* Utility Actions */}
                                     <button onClick={handleCopy} title="Copy text"
-                                        className="p-2 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-colors">
-                                        {copied ? <CheckCircle2 size={14} className="text-green-400" /> : <Copy size={14} />}
+                                        className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+                                        {copied ? <CheckCircle2 size={14} className="text-green-500" /> : <Copy size={14} />}
                                     </button>
                                     <button onClick={handleDownload} title="Download" disabled={!text.trim() && !output.trim()}
-                                        className="p-2 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-colors disabled:opacity-30">
+                                        className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30">
                                         <Download size={14} />
                                     </button>
                                     <button onClick={handleClear} title="Clear all"
-                                        className="p-2 rounded-lg hover:bg-red-900/50 text-slate-400 hover:text-red-400 transition-colors">
+                                        className="p-2 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors">
                                         <Trash2 size={14} />
                                     </button>
                                 </div>
@@ -316,42 +316,42 @@ const AITools = () => {
                                 ref={textareaRef}
                                 value={text}
                                 onChange={e => { setText(e.target.value); setOutput(''); }}
-                                className="w-full h-56 sm:h-72 bg-transparent resize-none focus:outline-none text-white placeholder-slate-500 leading-relaxed text-sm p-5"
+                                className="w-full h-56 sm:h-72 bg-transparent resize-none focus:outline-none text-foreground placeholder:text-muted-foreground/50 leading-relaxed text-sm p-5"
                                 placeholder="Start writing or paste your text here..."
                             />
 
                             {/* Output Area */}
                             {(isBusy || output) && (
-                                <div className="border-t border-slate-700/50 bg-slate-800/30">
+                                <div className="border-t border-border bg-muted/20">
                                     <div className="flex items-center justify-between px-5 py-2.5">
-                                        <span className="text-xs font-semibold text-purple-400 flex items-center gap-1.5">
+                                        <span className="text-xs font-semibold text-purple-600 dark:text-purple-400 flex items-center gap-1.5">
                                             {isBusy ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
                                             {isBusy ? `${action}…` : `${action} Result`}
                                         </span>
                                         {output && (
                                             <button onClick={handleApplyOutput}
-                                                className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1.5 px-2.5 py-1 rounded-md hover:bg-purple-500/10 transition-colors font-medium">
+                                                className="text-xs text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 flex items-center gap-1.5 px-2.5 py-1 rounded-md hover:bg-purple-500/10 transition-colors font-medium">
                                                 <RefreshCw size={11} /> Apply to editor
                                             </button>
                                         )}
                                     </div>
                                     {isBusy ? (
                                         <div className="h-20 flex items-center justify-center">
-                                            <div className="flex items-center gap-2 text-xs text-slate-400">
-                                                <Loader2 size={14} className="animate-spin text-purple-400" /> Processing your text…
+                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                <Loader2 size={14} className="animate-spin text-purple-500" /> Processing your text…
                                             </div>
                                         </div>
                                     ) : (
                                         <div className="px-5 pb-4 max-h-52 overflow-y-auto">
-                                            <pre className="text-sm text-slate-200 whitespace-pre-wrap font-sans leading-relaxed">{output}</pre>
+                                            <pre className="text-sm text-foreground/90 whitespace-pre-wrap font-sans leading-relaxed">{output}</pre>
                                         </div>
                                     )}
                                 </div>
                             )}
 
                             {/* Bottom Bar */}
-                            <div className="flex flex-wrap justify-between items-center px-5 py-3 border-t border-slate-700/50 bg-slate-800/20 gap-3">
-                                <span className="text-xs text-slate-500 font-medium">
+                            <div className="flex flex-wrap justify-between items-center px-5 py-3 border-t border-border bg-muted/20 gap-3">
+                                <span className="text-xs text-muted-foreground font-medium">
                                     {stats.words} word{stats.words !== 1 ? 's' : ''} · {stats.chars} character{stats.chars !== 1 ? 's' : ''}
                                 </span>
                                 <button onClick={handleImprove} disabled={isBusy || !text.trim()}
@@ -368,16 +368,16 @@ const AITools = () => {
                                 <button key={qa.label}
                                     disabled={isBusy || !text.trim()}
                                     onClick={() => { setActiveQuickAction(qa.label); runAction(qa.fn, qa.label); }}
-                                    className="bg-slate-900/60 backdrop-blur border border-slate-700/50 hover:border-purple-500/30 rounded-xl px-4 py-3.5 text-left transition-all disabled:opacity-30 disabled:cursor-not-allowed group hover:bg-slate-800/60">
+                                    className="bg-card backdrop-blur border border-border hover:border-purple-500/30 rounded-xl px-4 py-3.5 text-left transition-all disabled:opacity-30 disabled:cursor-not-allowed group hover:bg-muted/50">
                                     <div className="flex items-center gap-2.5 mb-1">
                                         <div className="p-1.5 rounded-lg bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors">
                                             {isBusy && activeQuickAction === qa.label
-                                                ? <Loader2 size={14} className="animate-spin text-purple-400" />
-                                                : <qa.icon size={14} className="text-purple-400" />}
+                                                ? <Loader2 size={14} className="animate-spin text-purple-500" />
+                                                : <qa.icon size={14} className="text-purple-500" />}
                                         </div>
-                                        <span className="text-sm font-semibold text-white">{qa.label}</span>
+                                        <span className="text-sm font-semibold text-foreground tracking-tight">{qa.label}</span>
                                     </div>
-                                    <p className="text-[11px] text-slate-500 pl-9">{qa.desc}</p>
+                                    <p className="text-[11px] text-muted-foreground pl-9">{qa.desc}</p>
                                 </button>
                             ))}
                         </div>
@@ -386,22 +386,22 @@ const AITools = () => {
                     {/* ═══════ RIGHT: Sidebar ═══════ */}
                     <div className="flex flex-col gap-5">
                         {/* Templates */}
-                        <div className="bg-slate-900/60 backdrop-blur border border-slate-700/50 rounded-2xl p-5">
-                            <h3 className="font-bold text-sm mb-3 flex items-center gap-2 text-white">
-                                <Zap size={14} className="text-amber-400" /> Templates
+                        <div className="bg-card backdrop-blur border border-border rounded-2xl p-5 shadow-sm">
+                            <h3 className="font-bold text-sm mb-3 flex items-center gap-2 text-foreground">
+                                <Zap size={14} className="text-amber-500 dark:text-amber-400" /> Templates
                             </h3>
                             <div className="space-y-2">
                                 {TEMPLATES.map(t => (
                                     <button key={t.label} onClick={() => handleTemplate(t)}
-                                        className="w-full text-left px-3.5 py-3 rounded-xl bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/30 hover:border-purple-500/30 transition-all group flex items-center gap-3">
+                                        className="w-full text-left px-3.5 py-3 rounded-xl bg-muted/40 hover:bg-muted border border-border/40 hover:border-purple-500/30 transition-all group flex items-center gap-3">
                                         <div className={`p-2 rounded-lg bg-gradient-to-br ${t.color} shadow-sm`}>
                                             <t.icon size={14} className="text-white" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <span className="text-sm font-medium text-white group-hover:text-purple-300 transition-colors block">{t.label}</span>
-                                            <span className="text-[10px] text-slate-500">Click to load template</span>
+                                            <span className="text-sm font-medium text-foreground group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors block leading-tight">{t.label}</span>
+                                            <span className="text-[10px] text-muted-foreground mt-0.5 block italic">Click to load</span>
                                         </div>
-                                        <ChevronRight size={14} className="text-slate-600 group-hover:text-purple-400 transition-colors shrink-0" />
+                                        <ChevronRight size={14} className="text-muted-foreground opacity-30 group-hover:text-purple-500 transition-colors shrink-0" />
                                     </button>
                                 ))}
                             </div>
@@ -416,32 +416,32 @@ const AITools = () => {
                                 {/* Grammar Check */}
                                 <div>
                                     <button onClick={handleGrammarCheck} disabled={grammarStatus === 'running' || !text.trim()}
-                                        className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/30 hover:border-green-500/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all group">
+                                        className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl bg-muted/40 hover:bg-muted border border-border/40 hover:border-green-500/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all group">
                                         <div className="flex items-center gap-3">
                                             <div className="p-2 rounded-lg bg-green-500/10 group-hover:bg-green-500/20 transition-colors">
                                                 {grammarStatus === 'running'
-                                                    ? <Loader2 size={14} className="animate-spin text-green-400" />
-                                                    : <CheckCircle2 size={14} className="text-green-400" />}
+                                                    ? <Loader2 size={14} className="animate-spin text-green-600 dark:text-green-400" />
+                                                    : <CheckCircle2 size={14} className="text-green-600 dark:text-green-400" />}
                                             </div>
                                             <div>
-                                                <span className="text-sm font-medium text-white block">Grammar Check</span>
-                                                <span className="text-[10px] text-slate-500">
+                                                <span className="text-sm font-medium text-foreground block">Grammar Check</span>
+                                                <span className="text-[10px] text-muted-foreground">
                                                     {grammarStatus === 'running' ? 'Analyzing...' : grammarStatus === 'done' ? 'Complete' : 'Click to check'}
                                                 </span>
                                             </div>
                                         </div>
                                         {grammarStatus === 'done'
-                                            ? <CheckCircle2 size={14} className="text-green-400 shrink-0" />
-                                            : <ChevronRight size={14} className="text-slate-600 group-hover:text-green-400 transition-colors shrink-0" />}
+                                            ? <CheckCircle2 size={14} className="text-green-500 shrink-0" />
+                                            : <ChevronRight size={14} className="text-muted-foreground opacity-30 group-hover:text-green-500 transition-colors shrink-0" />}
                                     </button>
                                     {grammarStatus === 'done' && grammarIssues.length > 0 && (
-                                        <div className="mt-2 p-3 bg-slate-800/40 rounded-xl border border-slate-700/30 space-y-2">
+                                        <div className="mt-2 p-3 bg-muted/30 rounded-xl border border-border/50 space-y-2">
                                             {grammarIssues.map((issue, i) => (
                                                 <div key={i} className="flex items-start gap-2 text-xs">
                                                     {issue.startsWith('No obvious')
-                                                        ? <CheckCircle2 size={12} className="text-green-400 mt-0.5 shrink-0" />
-                                                        : <AlertCircle size={12} className="text-amber-400 mt-0.5 shrink-0" />}
-                                                    <span className="text-slate-400">{issue}</span>
+                                                        ? <CheckCircle2 size={12} className="text-green-500 mt-0.5 shrink-0" />
+                                                        : <AlertCircle size={12} className="text-amber-500 mt-0.5 shrink-0" />}
+                                                    <span className="text-muted-foreground">{issue}</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -451,27 +451,27 @@ const AITools = () => {
                                 {/* Plagiarism Scan */}
                                 <div>
                                     <button onClick={handlePlagiarismScan} disabled={plagiarismStatus === 'running' || !text.trim()}
-                                        className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/30 hover:border-amber-500/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all group">
+                                        className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl bg-muted/40 hover:bg-muted border border-border/40 hover:border-amber-500/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all group">
                                         <div className="flex items-center gap-3">
                                             <div className="p-2 rounded-lg bg-amber-500/10 group-hover:bg-amber-500/20 transition-colors">
                                                 {plagiarismStatus === 'running'
-                                                    ? <Loader2 size={14} className="animate-spin text-amber-400" />
-                                                    : <Search size={14} className="text-amber-400" />}
+                                                    ? <Loader2 size={14} className="animate-spin text-amber-600 dark:text-amber-400" />
+                                                    : <Search size={14} className="text-amber-600 dark:text-amber-400" />}
                                             </div>
                                             <div>
-                                                <span className="text-sm font-medium text-white block">Plagiarism Scan</span>
-                                                <span className="text-[10px] text-slate-500">
+                                                <span className="text-sm font-medium text-foreground block">Plagiarism Scan</span>
+                                                <span className="text-[10px] text-muted-foreground">
                                                     {plagiarismStatus === 'running' ? 'Scanning...' : plagiarismStatus === 'done' ? 'Complete' : 'Click to scan'}
                                                 </span>
                                             </div>
                                         </div>
                                         {plagiarismStatus === 'done'
-                                            ? <CheckCircle2 size={14} className="text-green-400 shrink-0" />
-                                            : <Search size={14} className="text-slate-600 group-hover:text-amber-400 transition-colors shrink-0" />}
+                                            ? <CheckCircle2 size={14} className="text-green-500 shrink-0" />
+                                            : <Search size={14} className="text-muted-foreground opacity-30 group-hover:text-amber-500 transition-colors shrink-0" />}
                                     </button>
                                     {plagiarismStatus === 'done' && plagiarismResult && (
                                         <div className="mt-2 p-3 bg-green-500/5 rounded-xl border border-green-500/20">
-                                            <p className="text-xs text-green-400 font-medium">{plagiarismResult}</p>
+                                            <p className="text-xs text-green-600 dark:text-green-400 font-medium">{plagiarismResult}</p>
                                         </div>
                                     )}
                                 </div>

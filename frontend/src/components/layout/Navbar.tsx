@@ -149,7 +149,10 @@ const Navbar = () => {
                             className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground"
                             aria-label="Toggle theme"
                         >
-                            {theme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}
+                            <div className="relative w-full h-full flex items-center justify-center">
+                                <Sun size={19} className="absolute transition-all scale-100 rotate-0 dark:scale-0 dark:-rotate-90" />
+                                <Moon size={19} className="absolute transition-all scale-0 rotate-90 dark:scale-100 dark:rotate-0" />
+                            </div>
                         </button>
                         <button
                             onClick={() => setIsOpen(!isOpen)}
