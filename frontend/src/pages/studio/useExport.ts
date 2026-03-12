@@ -27,7 +27,7 @@ export interface UseExportReturn {
     exportError: string | null;
     exportDone: boolean;
     downloadUrl: string | null;
-    startExport: (videoUrl: string | null, settings: ExportSettings) => Promise<void>;
+    startExport: (clips: import('./types').Clip[], settings: ExportSettings) => Promise<void>;
     downloadFile: (filename?: string) => void;
     resetExport: () => void;
 }
@@ -49,77 +49,8 @@ export function useExport(): UseExportReturn {
         setDownloadUrl(null);
     }, [downloadUrl]);
 
-    const exportWithMediaRecorder = useCallback(async (
-        videoUrl: string,
-        settings: ExportSettings
-    ): Promise<Blob> => {
-        return new Promise((resolve, reject) => {
-            const video = document.createElement('video');
-            video.src = videoUrl;
-            video.muted = true;       // MUST be muted to allow autoplay
-            video.playsInline = true;
-            video.crossOrigin = 'anonymous';
-            video.preload = 'auto';
-
-            video.onloadeddata = () => {
-                const canvas = document.createElement('canvas');
-                const resHeight = settings.resolution === '480p' ? 480 :
-                    settings.resolution === '720p' ? 720 :
-                        settings.resolution === '1080p' ? 1080 : 2160;
-                const resWidth = Math.round(resHeight * (16 / 9));
-                canvas.width = resWidth;
-                canvas.height = resHeight;
-                const ctx = canvas.getContext('2d')!;
-
-                const stream = canvas.captureStream(settings.fps);
-
-                const mimeType = settings.format === 'webm' ? 'video/webm;codecs=vp9'
-                    : settings.format === 'mp4' ? 'video/mp4'
-                        : 'video/webm';
-                const recorder = new MediaRecorder(stream, {
-                    mimeType: MediaRecorder.isTypeSupported(mimeType) ? mimeType : 'video/webm',
-                    videoBitsPerSecond: settings.quality === 'lossless' ? 20_000_000
-                        : settings.quality === 'high' ? 10_000_000
-                            : settings.quality === 'medium' ? 5_000_000 : 2_000_000,
-                });
-
-                const chunks: BlobPart[] = [];
-                recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
-                recorder.onstop = () => {
-                    const blob = new Blob(chunks, { type: recorder.mimeType });
-                    resolve(blob);
-                };
-                recorder.onerror = () => reject(new Error('MediaRecorder error'));
-
-                // Draw frames to canvas
-                const drawFrame = () => {
-                    if (video.ended || video.paused) return;
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    if (video.duration > 0) {
-                        setProgress(Math.round((video.currentTime / video.duration) * 100));
-                    }
-                    requestAnimationFrame(drawFrame);
-                };
-
-                recorder.start(100);
-                video.play()
-                    .then(() => drawFrame())
-                    .catch((err) => {
-                        recorder.stop();
-                        reject(new Error('Browser blocked video playback: ' + err.message));
-                    });
-
-                video.onended = () => {
-                    recorder.stop();
-                    video.remove();
-                };
-            };
-            video.onerror = () => reject(new Error('Failed to load video for export'));
-        });
-    }, []);
-
     const exportWithFFmpeg = useCallback(async (
-        videoUrl: string,
+        clips: import('./types').Clip[],
         settings: ExportSettings
     ): Promise<Blob> => {
         const { FFmpeg } = await import('@ffmpeg/ffmpeg');
@@ -138,41 +69,81 @@ export function useExport(): UseExportReturn {
         }
 
         const ffmpeg = ffmpegRef.current;
-        const inputExt = videoUrl.includes('.webm') ? 'webm' : 'mp4';
-        const inputName = `input.${inputExt}`;
+        const scale = RES_MAP[settings.resolution];
+        const crf = CRF_MAP[settings.quality];
+        
+        // 1. Write all unique source files to FFmpeg FS
+        const uniqueSrcs = Array.from(new Set(clips.map(c => c.src).filter(Boolean)));
+        const srcMap: Record<string, string> = {};
+        for (let i = 0; i < uniqueSrcs.length; i++) {
+            const src = uniqueSrcs[i]!;
+            const ext = src.includes('.webm') ? 'webm' : 'mp4';
+            const name = `input_${i}.${ext}`;
+            await ffmpeg.writeFile(name, await fetchFile(src));
+            srcMap[src] = name;
+        }
+
+        // 2. Build Complex Filter for Trimming and Concatenation
+        // Format: [0:v]trim=start=1:end=2,setpts=PTS-STARTPTS[v0]; [0:a]atrim=start=1:end=2,asetpts=PTS-STARTPTS[a0]; ... [v0][a0][v1][a1]concat=n=2:v=1:a=1[outv][outa]
+        let filterStr = '';
+        let concatVideoStr = '';
+        let concatAudioStr = '';
+
+        clips.forEach((clip, i) => {
+            const inputIdx = uniqueSrcs.indexOf(clip.src!);
+            
+            // Video part
+            filterStr += `[${inputIdx}:v]trim=start=${clip.startTrim}:end=${clip.endTrim},setpts=PTS-STARTPTS,scale=${scale}:force_original_aspect_ratio=decrease,pad=${scale.replace(':', ':')}:(ow-iw)/2:(oh-ih)/2[v${i}]; `;
+            
+            // Audio part (assume audio exists for now)
+            filterStr += `[${inputIdx}:a]atrim=start=${clip.startTrim}:end=${clip.endTrim},asetpts=PTS-STARTPTS[a${i}]; `;
+            
+            concatVideoStr += `[v${i}]`;
+            concatAudioStr += `[a${i}]`;
+        });
+
+        filterStr += `${concatVideoStr}${concatAudioStr}concat=n=${clips.length}:v=1:a=1[outv][outa]`;
+
         const outputExt = settings.format === 'gif' ? 'gif' : settings.format;
         const outputName = `output.${outputExt}`;
 
-        await ffmpeg.writeFile(inputName, await fetchFile(videoUrl));
+        const args: string[] = [];
+        uniqueSrcs.forEach(src => {
+            args.push('-i', srcMap[src!]);
+        });
 
-        const scale = RES_MAP[settings.resolution];
-        const crf = CRF_MAP[settings.quality];
-
-        const args: string[] = ['-i', inputName];
+        args.push('-filter_complex', filterStr, '-map', '[outv]', '-map', '[outa]');
 
         if (settings.format === 'gif') {
-            args.push('-vf', `fps=${settings.fps},scale=${scale}:flags=lanczos`);
+            // GIFs usually don't have audio map [outv] only
+            // Simple override for GIF
+            const gifFilter = filterStr.replace(/\[outa\]/g, '').replace(/:a=1/g, ':a=0').replace(/\[a\d+\]/g, '').replace(/atrim=.*?;/g, '');
+            args.splice(args.indexOf('-filter_complex'), 4); // remove filters/maps
+            args.push('-filter_complex', gifFilter, '-map', '[outv]', '-r', String(settings.fps));
         } else if (settings.format === 'webm') {
-            args.push('-vf', `scale=${scale}:force_original_aspect_ratio=decrease`,
-                '-c:v', 'libvpx-vp9', '-crf', String(crf), '-b:v', '0',
-                '-r', String(settings.fps), '-c:a', 'libopus');
+            args.push('-c:v', 'libvpx-vp9', '-crf', String(crf), '-b:v', '0', '-r', String(settings.fps), '-c:a', 'libopus');
         } else {
-            args.push('-vf', `scale=${scale}:force_original_aspect_ratio=decrease`,
-                '-c:v', 'libx264', '-crf', String(crf), '-preset', 'medium',
-                '-r', String(settings.fps), '-c:a', 'aac', '-b:a', '128k');
+            args.push('-c:v', 'libx264', '-crf', String(crf), '-preset', 'medium', '-r', String(settings.fps), '-c:a', 'aac', '-b:a', '128k');
         }
+        
         args.push('-y', outputName);
 
         await ffmpeg.exec(args);
         const data = await ffmpeg.readFile(outputName);
         const mimeType = settings.format === 'gif' ? 'image/gif'
             : settings.format === 'webm' ? 'video/webm' : 'video/mp4';
+        
+        // Cleanup FS
+        for (const name of Object.values(srcMap)) {
+            await ffmpeg.deleteFile(name);
+        }
+
         return new Blob([data], { type: mimeType });
     }, []);
 
-    const startExport = useCallback(async (videoUrl: string | null, settings: ExportSettings) => {
-        if (!videoUrl) {
-            setExportError('No video loaded. Upload a video first.');
+    const startExport = useCallback(async (clips: import('./types').Clip[], settings: ExportSettings) => {
+        if (clips.length === 0) {
+            setExportError('Timeline is empty.');
             return;
         }
 
@@ -183,15 +154,13 @@ export function useExport(): UseExportReturn {
 
         try {
             let blob: Blob;
+            // Force FFmpeg for timeline export because MediaRecorder cannot handle concatenation easily
             if (typeof crossOriginIsolated !== 'undefined' && crossOriginIsolated) {
-                try {
-                    blob = await exportWithFFmpeg(videoUrl, settings);
-                } catch (ffErr) {
-                    console.warn('FFmpeg failed, falling back to MediaRecorder:', ffErr);
-                    blob = await exportWithMediaRecorder(videoUrl, { ...settings, format: 'webm' });
-                }
+                blob = await exportWithFFmpeg(clips, settings);
             } else {
-                blob = await exportWithMediaRecorder(videoUrl, { ...settings, format: 'webm' });
+                 setExportError('Processing requires cross-origin isolation. Please ensure headers are set.');
+                 setIsExporting(false);
+                 return;
             }
 
             const url = URL.createObjectURL(blob);
@@ -199,17 +168,18 @@ export function useExport(): UseExportReturn {
             setProgress(100);
             setExportDone(true);
         } catch (err: any) {
+            console.error('Export Error:', err);
             setExportError(err.message || 'Export failed');
         } finally {
             setIsExporting(false);
         }
-    }, [exportWithFFmpeg, exportWithMediaRecorder]);
+    }, [exportWithFFmpeg]);
 
     const downloadFile = useCallback((filename?: string) => {
         if (!downloadUrl) return;
         const a = document.createElement('a');
         a.href = downloadUrl;
-        a.download = filename || 'export.mp4';
+        a.download = filename || 'video_studio_export.mp4';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

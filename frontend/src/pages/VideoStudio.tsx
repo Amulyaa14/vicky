@@ -177,6 +177,32 @@ const VideoStudio: React.FC = () => {
         setClips(p => p.map(c => c.id === id ? { ...c, startTrim, endTrim } : c));
     };
 
+    const splitClip = (id: string) => {
+        const clipIdx = clips.findIndex(c => c.id === id);
+        if (clipIdx === -1) return;
+        const clip = clips[clipIdx];
+        
+        // Ensure split point is within the clip's current trim range
+        // In a real editor, you'd calculate this based on the timeline position.
+        // For this implementation, we'll split the clip at the current playhead.
+        
+        const newClip: Clip = {
+            ...clip,
+            id: uid(),
+            label: `${clip.label} (Part 2)`,
+            startTrim: currentTime, // New clip starts where old one split
+        };
+        
+        const updatedClips = [...clips];
+        // Original clip now ends where split happened
+        updatedClips[clipIdx] = { ...clip, endTrim: currentTime };
+        // Insert new clip after original
+        updatedClips.splice(clipIdx + 1, 0, newClip);
+        
+        setClips(updatedClips);
+        showToast('Clip split successfully');
+    };
+
     const updateClipAdjustment = (id: string, key: keyof ClipAdjustments, value: number) => {
         setClips(p => p.map(c => {
             if (c.id !== id) return c;
@@ -657,17 +683,31 @@ const VideoStudio: React.FC = () => {
                                         <div>
                                             <label className="text-[10px] text-muted-foreground block mb-1">Trim Start ({fmt(selectedClip.startTrim)})</label>
                                             <input type="range" min={0} max={selectedClip.duration} step={0.1} value={selectedClip.startTrim}
-                                                onChange={e => updateClipTrim(selectedClip.id, parseFloat(e.target.value), selectedClip.endTrim)} className="w-full" />
+                                                onChange={e => {
+                                                    const val = parseFloat(e.target.value);
+                                                    updateClipTrim(selectedClip.id, val, Math.max(val + 0.1, selectedClip.endTrim));
+                                                    if (videoRef.current) videoRef.current.currentTime = val;
+                                                }} className="w-full" />
                                         </div>
                                         <div>
                                             <label className="text-[10px] text-muted-foreground block mb-1">Trim End ({fmt(selectedClip.endTrim)})</label>
                                             <input type="range" min={0} max={selectedClip.duration} step={0.1} value={selectedClip.endTrim}
-                                                onChange={e => updateClipTrim(selectedClip.id, selectedClip.startTrim, parseFloat(e.target.value))} className="w-full" />
+                                                onChange={e => {
+                                                    const val = parseFloat(e.target.value);
+                                                    updateClipTrim(selectedClip.id, Math.min(val - 0.1, selectedClip.startTrim), val);
+                                                    if (videoRef.current) videoRef.current.currentTime = val;
+                                                }} className="w-full" />
                                         </div>
-                                        <button onClick={() => deleteClip(selectedClip.id)}
-                                            className="w-full flex items-center justify-center gap-2 py-2 mt-4 bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-500/30 rounded-lg text-xs font-bold transition-colors">
-                                            <Trash2 size={14} /> Delete Clip
-                                        </button>
+                                        <div className="grid grid-cols-2 gap-2 mt-4">
+                                            <button onClick={() => splitClip(selectedClip.id)}
+                                                className="flex items-center justify-center gap-2 py-2 bg-violet-600/20 hover:bg-violet-600/40 text-violet-400 border border-violet-500/30 rounded-lg text-xs font-bold transition-colors">
+                                                <Scissors size={14} /> Split
+                                            </button>
+                                            <button onClick={() => deleteClip(selectedClip.id)}
+                                                className="flex items-center justify-center gap-2 py-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-500/30 rounded-lg text-xs font-bold transition-colors">
+                                                <Trash2 size={14} /> Delete
+                                            </button>
+                                        </div>
                                     </>
                                 ) : (
                                     <>
@@ -908,7 +948,7 @@ const VideoStudio: React.FC = () => {
                                     )}
 
                                     <button
-                                        onClick={() => exporter.startExport(activeVideoUrl, exportSettings)}
+                                        onClick={() => exporter.startExport(clips, exportSettings)}
                                         disabled={exporter.isExporting}
                                         className="w-full mt-5 py-3 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2">
                                         {exporter.isExporting ? (
