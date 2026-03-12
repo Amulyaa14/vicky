@@ -63,7 +63,7 @@ authRouter.post('/register', async (c) => {
         const verificationToken = generateToken();
 
         await c.env.DB.prepare(
-            'INSERT INTO users (id, email, password_hash, is_email_verified, verification_token) VALUES (?, ?, ?, 0, ?)'
+            'INSERT INTO users (id, email, password_hash, is_email_verified, verification_token) VALUES (?, ?, ?, 1, ?)'
         ).bind(id, email, hash, verificationToken).run();
 
         const frontendUrl = c.env.FRONTEND_URL || FRONTEND_URL_DEFAULT;
@@ -107,33 +107,44 @@ authRouter.post('/login', async (c) => {
         const { email, password } = await c.req.json();
         if (!email || !password) return c.json({ error: 'Email and password required' }, 400);
 
+        console.log(`Login attempt for: ${email}`);
+        
         const user = await c.env.DB.prepare('SELECT id, email, password_hash, is_email_verified FROM users WHERE email = ?').bind(email).first();
-        if (!user) return c.json({ error: 'Invalid credentials' }, 401);
+        if (!user) {
+            console.log(`User not found: ${email}`);
+            return c.json({ error: 'Invalid credentials' }, 401);
+        }
 
-        // Email verification check disabled for development
-        // if (user.is_email_verified === 0) {
-        //     return c.json({ error: 'Please verify your email address before logging in.', unverified: true }, 403);
-        // }
-
-        const isValid = bcrypt.compareSync(password, user.password_hash as string);
-        if (!isValid) return c.json({ error: 'Invalid credentials' }, 401);
+        const isValid = await bcrypt.compare(password, user.password_hash as string);
+        if (!isValid) {
+            console.log(`Invalid password for: ${email}`);
+            return c.json({ error: 'Invalid credentials' }, 401);
+        }
 
         const ip = c.req.header('CF-Connecting-IP') || 'unknown';
         const userAgent = c.req.header('User-Agent') || 'unknown';
-        await c.env.DB.prepare(
-            'INSERT INTO login_logs (user_id, ip_address, user_agent) VALUES (?, ?, ?)'
-        ).bind(user.id, ip, userAgent).run();
+        
+        try {
+            await c.env.DB.prepare(
+                'INSERT INTO login_logs (user_id, ip_address, user_agent) VALUES (?, ?, ?)'
+            ).bind(user.id, ip, userAgent).run();
+        } catch (dbError) {
+            console.error("Failed to log login entry:", dbError);
+            // Don't fail the login if logging fails (e.g., table missing)
+        }
 
         const token = await sign({ id: user.id, email: user.email, exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7 }, c.env.JWT_SECRET);
 
+        console.log(`Successful login for: ${email}`);
         return c.json({ user: { id: user.id, email: user.email }, token });
     } catch (e: any) {
-        return c.json({ error: e.message }, 500);
+        console.error("Login route error:", e);
+        return c.json({ error: e.message || 'An unexpected error occurred during login' }, 500);
     }
 });
 
 // 4. Get Current User ("Me")
-authRouter.get('/me', authMiddleware, async (c) => {
+authRouter.get('/me', authMiddleware, async (c: any) => {
     const user = c.get('user');
     return c.json({ user: { id: user.id, email: user.email } });
 });

@@ -12,9 +12,12 @@ const app = new Hono<{ Bindings: Bindings }>();
 
 // Enable CORS for frontend
 app.use('/*', cors({
-    origin: '*',
-    allowHeaders: ['Content-Type', 'Authorization'],
+    origin: (origin) => origin || '*',
+    allowHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    exposeHeaders: ['Content-Length', 'X-Kuma-Revision'],
+    maxAge: 600,
+    credentials: true,
 }));
 
 // Mount Modular Routers
