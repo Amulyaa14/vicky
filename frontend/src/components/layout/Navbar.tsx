@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Zap, Sun, Moon, ChevronRight, Home, FileText, Video, Cpu, Image as ImageIcon, Layers } from 'lucide-react';
+import { Menu, X, Zap, Sun, Moon, ChevronRight, Home, FileText, Video, Cpu, Image as ImageIcon, Layers, Target } from 'lucide-react';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '@/components/ui/Button';
@@ -65,6 +65,7 @@ const Navbar = () => {
         { name: 'Converter', path: '/converter', icon: FileText },
         { name: 'Video Studio', path: '/video-studio', icon: Video },
         { name: 'Image Editor', path: '/image-editor', icon: ImageIcon },
+        { name: 'ATS Checker', path: '/ats-checker', icon: Target },
         { name: 'AI Tools', path: '/ai-tools', icon: Cpu },
         { name: 'BG Remover', path: '/bg-remover', icon: Layers },
     ], []);

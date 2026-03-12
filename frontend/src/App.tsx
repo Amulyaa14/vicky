@@ -20,6 +20,7 @@ const BgRemover = lazy(() => import('@/pages/BgRemover'));
 const ExpandableTabsDemo = lazy(() => import('@/pages/ExpandableTabsDemo'));
 const VideoStudio = lazy(() => import('@/pages/VideoStudio'));
 const ImageEditor = lazy(() => import('@/pages/ImageEditor'));
+const ATSChecker = lazy(() => import('@/pages/ATSChecker'));
 
 // Loading component
 const PageLoader = () => (
@@ -71,6 +72,7 @@ function App() {
             <Route path="bg-remover" element={<ProtectedRoute><BgRemover /></ProtectedRoute>} />
             <Route path="video-studio" element={<ProtectedRoute><VideoStudio /></ProtectedRoute>} />
             <Route path="image-editor" element={<ProtectedRoute><ImageEditor /></ProtectedRoute>} />
+            <Route path="ats-checker" element={<ProtectedRoute><ATSChecker /></ProtectedRoute>} />
 
             <Route path="*" element={<NotFound />} />
           </Route>
