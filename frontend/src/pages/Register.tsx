@@ -38,43 +38,43 @@ export default function Register() {
     };
 
     return (
-        <div className="flex items-center justify-center min-h-[80vh] bg-[#0a0a0a]">
-            <div className="w-full max-w-md p-8 bg-[#141414] border border-white/10 rounded-2xl shadow-2xl">
+        <div className="flex items-center justify-center min-h-[80vh] bg-background">
+            <div className="w-full max-w-md p-8 bg-card border border-border rounded-2xl shadow-2xl">
                 <div className="text-center mb-8">
                     <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-violet-500/10 text-violet-400 mb-4">
                         <UserPlus size={24} />
                     </div>
-                    <h1 className="text-2xl font-bold text-white">Create an Account</h1>
-                    <p className="text-gray-400 text-sm mt-2">Join us to access all tools and save history.</p>
+                    <h1 className="text-2xl font-bold text-foreground">Create an Account</h1>
+                    <p className="text-muted-foreground text-sm mt-2">Join us to access all tools and save history.</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-1">
-                        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Email</label>
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email</label>
                         <div className="relative">
-                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/60" size={16} />
                             <input
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
-                                className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-violet-500 transition-shadow"
+                                className="w-full bg-muted/30 border border-border rounded-lg pl-10 pr-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-violet-500 transition-shadow"
                                 placeholder="you@example.com"
                             />
                         </div>
                     </div>
 
                     <div className="space-y-1">
-                        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Password</label>
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Password</label>
                         <div className="relative">
-                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/60" size={16} />
                             <input
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
                                 minLength={6}
-                                className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-violet-500 transition-shadow"
+                                className="w-full bg-muted/30 border border-border rounded-lg pl-10 pr-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-violet-500 transition-shadow"
                                 placeholder="At least 6 characters"
                             />
                         </div>
@@ -83,13 +83,13 @@ export default function Register() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 rounded-lg transition-colors mt-6 disabled:opacity-50"
+                        className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 rounded-lg transition-colors mt-6 disabled:opacity-50 shadow-lg shadow-violet-500/20"
                     >
                         {loading ? 'Creating account...' : 'Create Account'}
                     </button>
                 </form>
 
-                <div className="mt-6 text-center text-sm text-gray-400">
+                <div className="mt-6 text-center text-sm text-muted-foreground">
                     Already have an account?{' '}
                     <Link to="/login" className="text-violet-400 hover:text-violet-300 font-semibold transition-colors">
                         Log in

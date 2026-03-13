@@ -408,9 +408,9 @@ const AITools = () => {
                         </div>
 
                         {/* Checkers */}
-                        <div className="bg-slate-900/60 backdrop-blur border border-slate-700/50 rounded-2xl p-5">
-                            <h3 className="font-bold text-sm mb-3 flex items-center gap-2 text-white">
-                                <ShieldCheck size={14} className="text-green-400" /> Checkers
+                        <div className="bg-card backdrop-blur border border-border rounded-2xl p-5 shadow-sm">
+                            <h3 className="font-bold text-sm mb-3 flex items-center gap-2 text-foreground">
+                                <ShieldCheck size={14} className="text-green-500 dark:text-green-400" /> Checkers
                             </h3>
                             <div className="space-y-3">
                                 {/* Grammar Check */}
@@ -479,10 +479,10 @@ const AITools = () => {
                         </div>
 
                         {/* Tip Card */}
-                        <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/20 border border-purple-500/20 rounded-2xl p-5">
-                            <h4 className="text-xs font-bold text-purple-300 uppercase tracking-wider mb-2">💡 Pro Tip</h4>
-                            <p className="text-xs text-slate-400 leading-relaxed">
-                                Type or paste your text in the editor, then use <b className="text-purple-300">Summarize</b>, <b className="text-purple-300">Fix Grammar</b>, or <b className="text-purple-300">Improve Writing</b> to enhance it. Use templates for quick starts!
+                        <div className="bg-secondary/30 border border-border rounded-2xl p-5">
+                            <h4 className="text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-2">💡 Pro Tip</h4>
+                            <p className="text-xs text-muted-foreground leading-relaxed">
+                                Type or paste your text in the editor, then use <b className="text-purple-500">Summarize</b>, <b className="text-purple-500">Fix Grammar</b>, or <b className="text-purple-500">Improve Writing</b> to enhance it. Use templates for quick starts!
                             </p>
                         </div>
                     </div>

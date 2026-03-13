@@ -391,17 +391,17 @@ const ATSChecker = () => {
                                     </div>
 
                                     {/* Info Panel */}
-                                    <div className="bg-gradient-to-br from-indigo-900/30 to-blue-900/20 border border-indigo-500/20 rounded-2xl p-6 flex flex-col items-center justify-center text-center">
+                                    <div className="bg-secondary/40 border border-border shadow-sm rounded-2xl p-6 flex flex-col items-center justify-center text-center">
                                         <div className="w-12 h-12 rounded-full bg-indigo-500/20 flex items-center justify-center mb-3">
-                                            <Search size={24} className="text-indigo-400" />
+                                            <Search size={24} className="text-indigo-500 dark:text-indigo-400" />
                                         </div>
-                                        <h4 className="font-bold text-white mb-2">Want to score higher?</h4>
-                                        <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                                        <h4 className="font-bold text-foreground mb-2">Want to score higher?</h4>
+                                        <p className="text-xs text-muted-foreground leading-relaxed mb-4">
                                             ATS systems look for specific roles, skills, and metrics. Use the missing keywords list to naturally integrate those terms into your experience.
                                         </p>
                                         <button 
                                             onClick={handleReset}
-                                            className="px-6 py-2 rounded-full bg-white text-indigo-900 text-xs font-bold hover:bg-slate-100 transition-colors shadow-lg"
+                                            className="px-8 py-2.5 rounded-full bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
                                         >
                                             Re-analyze Resume
                                         </button>
