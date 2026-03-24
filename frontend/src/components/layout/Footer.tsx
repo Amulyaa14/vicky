@@ -62,10 +62,10 @@ const Footer = () => {
                 <div>
                     <h4 className="font-semibold text-foreground mb-4">Company</h4>
                     <ul className="space-y-2 text-sm text-muted-foreground">
-                        <li><Link to="#" className="hover:text-primary transition-colors">About Us</Link></li>
-                        <li><Link to="#" className="hover:text-primary transition-colors">Contact</Link></li>
-                        <li><Link to="#" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
-                        <li><Link to="#" className="hover:text-primary transition-colors">Terms of Service</Link></li>
+                        <li><Link to="/about" className="hover:text-primary transition-colors">About Us</Link></li>
+                        <li><Link to="/contact" className="hover:text-primary transition-colors">Contact</Link></li>
+                        <li><Link to="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
+                        <li><Link to="/terms" className="hover:text-primary transition-colors">Terms of Service</Link></li>
                     </ul>
                 </div>
 
@@ -94,9 +94,9 @@ const Footer = () => {
                         </div>
                     )}
                     <div className="flex items-center gap-4 mt-6">
-                        <a href="#" aria-label="GitHub" className="text-muted-foreground hover:text-foreground transition-colors p-1"><Github size={20} /></a>
-                        <a href="#" aria-label="Twitter" className="text-muted-foreground hover:text-foreground transition-colors p-1"><Twitter size={20} /></a>
-                        <a href="#" aria-label="LinkedIn" className="text-muted-foreground hover:text-foreground transition-colors p-1"><Linkedin size={20} /></a>
+                        <a href="https://github.com/Amulyaa14/vicky" target="_blank" rel="noopener noreferrer" aria-label="GitHub" className="text-muted-foreground hover:text-foreground transition-colors p-1"><Github size={20} /></a>
+                        <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter" className="text-muted-foreground hover:text-foreground transition-colors p-1"><Twitter size={20} /></a>
+                        <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="text-muted-foreground hover:text-foreground transition-colors p-1"><Linkedin size={20} /></a>
                     </div>
                 </div>
             </div>
@@ -108,9 +108,9 @@ const Footer = () => {
                         &copy; {new Date().getFullYear()} QuickTools. All rights reserved.
                     </p>
                     <div className="flex gap-6 text-sm text-muted-foreground">
-                        <Link to="#" className="hover:text-foreground transition-colors">Privacy</Link>
-                        <Link to="#" className="hover:text-foreground transition-colors">Terms</Link>
-                        <Link to="#" className="hover:text-foreground transition-colors">Cookies</Link>
+                        <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
+                        <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
+                        <Link to="/cookies" className="hover:text-foreground transition-colors">Cookies</Link>
                     </div>
                 </div>
             </div>

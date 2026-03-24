@@ -147,7 +147,7 @@ const Home = () => {
                         </div>
                         <div className="h-[300px] sm:h-[400px] lg:h-[500px] flex items-center justify-center bg-background/50 rounded-2xl border border-primary/20 overflow-hidden shadow-2xl relative group">
                             <img 
-                                src="file:///C:/Users/INDUJA/.gemini/antigravity/brain/f2005ddf-e61d-4502-bde2-dee4c07a7eb6/app_dashboard_preview_1773678329582.png" 
+                                src="/dashboard_preview.png" 
                                 alt="QuickTools Dashboard Preview" 
                                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                             />
