@@ -1,4 +1,4 @@
-import { UploadCloud, FileType, X } from 'lucide-react';
+import { UploadCloud, FileType, X, FileText } from 'lucide-react';
 import { useState, useCallback } from 'react';
 
 interface FileUploadProps {
@@ -107,7 +107,7 @@ const FileUpload = ({ onFileSelect, currentFile, onRemoveFile, accept, supported
                 <div className="bg-slate-800 rounded-xl p-4 sm:p-6 flex items-center justify-between border border-slate-700 gap-3">
                     <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                         <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0">
-                            <FileType size={20} />
+                            {file.name.toLowerCase().endsWith('.pdf') ? <FileText size={20} /> : <FileType size={20} />}
                         </div>
                         <div className="min-w-0">
                             <p className="font-medium text-white truncate text-sm sm:text-base">{file.name}</p>

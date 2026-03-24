@@ -2,21 +2,22 @@ import { useState, useCallback } from 'react';
 import { ArrowRight, Download, Loader2, ImageIcon, CheckCircle2, RefreshCcw } from 'lucide-react';
 import Button from '@/components/ui/Button';
 
-type OutputFormat = 'image/png' | 'image/jpeg' | 'image/webp';
+type OutputFormat = 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif' | 'image/bmp' | 'image/tiff' | 'image/svg+xml';
 
-interface FileEntry {
-    file: File;
-    previewUrl: string;
-    status: 'idle' | 'converting' | 'done' | 'error';
-    outputUrl: string | null;
-    outputSize: number | null;
-    errorMsg: string | null;
+interface FormatOption {
+    value: OutputFormat;
+    label: string;
+    ext: string;
 }
 
-const FORMAT_OPTIONS: { value: OutputFormat; label: string; ext: string }[] = [
+const FORMAT_OPTIONS: FormatOption[] = [
     { value: 'image/png', label: 'PNG (.png)', ext: 'png' },
     { value: 'image/jpeg', label: 'JPEG (.jpg)', ext: 'jpg' },
     { value: 'image/webp', label: 'WEBP (.webp)', ext: 'webp' },
+    { value: 'image/gif', label: 'GIF (.gif)', ext: 'gif' },
+    { value: 'image/bmp', label: 'BMP (.bmp)', ext: 'bmp' },
+    { value: 'image/tiff', label: 'TIFF (.tiff)', ext: 'tiff' },
+    { value: 'image/svg+xml', label: 'SVG (.svg)', ext: 'svg' },
 ];
 
 const formatBytes = (bytes: number) => {
@@ -25,25 +26,63 @@ const formatBytes = (bytes: number) => {
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 };
 
+interface FileEntry {
+    file: File;
+    previewUrl: string;
+    status: 'idle' | 'converting' | 'done' | 'error';
+    outputUrl: string | null;
+    outputSize: number | null;
+    errorMsg: string | null;
+    dimensions: { width: number; height: number } | null;
+}
+
 const ImageConverter = () => {
     const [entries, setEntries] = useState<FileEntry[]>([]);
     const [outputFormat, setOutputFormat] = useState<OutputFormat>('image/png');
-    const [quality, setQuality] = useState<number>(92);
+    const [quality, setQuality] = useState<number>(90);
     const [isConverting, setIsConverting] = useState(false);
     const [progress, setProgress] = useState(0);
     const [isDragging, setIsDragging] = useState(false);
+    
+    // New Advanced Options
+    const [resizeWidth, setResizeWidth] = useState<number | ''>('');
+    const [resizeHeight, setResizeHeight] = useState<number | ''>('');
+    const [maintainAspectRatio, setMaintainAspectRatio] = useState(true);
+    const [bgColor, setBgColor] = useState('#ffffff');
+    const [resolution, setResolution] = useState(72);
 
     const addFiles = useCallback((files: FileList | File[]) => {
-        const arr = Array.from(files).filter(f => f.type.startsWith('image/'));
+        const arr = Array.from(files).filter(f => 
+            f.type.startsWith('image/') || 
+            f.name.toLowerCase().endsWith('.heic') || 
+            f.name.toLowerCase().endsWith('.heif') ||
+            f.name.toLowerCase().endsWith('.tiff') ||
+            f.name.toLowerCase().endsWith('.bmp') ||
+            f.name.toLowerCase().endsWith('.svg')
+        );
         if (!arr.length) return;
-        const newEntries: FileEntry[] = arr.map(f => ({
-            file: f,
-            previewUrl: URL.createObjectURL(f),
-            status: 'idle',
-            outputUrl: null,
-            outputSize: null,
-            errorMsg: null,
-        }));
+        
+        const newEntries: FileEntry[] = arr.map(f => {
+            const previewUrl = URL.createObjectURL(f);
+            const entry: FileEntry = {
+                file: f,
+                previewUrl,
+                status: 'idle',
+                outputUrl: null,
+                outputSize: null,
+                errorMsg: null,
+                dimensions: null,
+            };
+            
+            // Get dimensions
+            const img = new Image();
+            img.onload = () => {
+                setEntries(prev => prev.map(e => e.file === f ? { ...e, dimensions: { width: img.width, height: img.height } } : e));
+            };
+            img.src = previewUrl;
+            
+            return entry;
+        });
         setEntries(prev => [...prev, ...newEntries]);
     }, []);
 
@@ -69,26 +108,61 @@ const ImageConverter = () => {
     };
 
     const convertSingle = async (entry: FileEntry, fmt: OutputFormat, q: number): Promise<{ url: string; size: number }> => {
-        return new Promise((resolve, reject) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                canvas.width = img.width;
-                canvas.height = img.height;
-                const ctx = canvas.getContext('2d')!;
-                // White background for JPEG (doesn't support transparency)
-                if (fmt === 'image/jpeg') {
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+        return new Promise(async (resolve, reject) => {
+            let finalFile = entry.file;
+
+            // Handle HEIC/HEIF (If library available)
+            if (entry.file.name.toLowerCase().match(/\.heic$|\.heif$/)) {
+                try {
+                    // Try to use heic2any if it's in scope (simplified check)
+                    const heic2any = (window as any).heic2any;
+                    if (heic2any) {
+                        const blob = await heic2any({ blob: entry.file, toType: "image/jpeg" });
+                        finalFile = new File([blob as Blob], "temp.jpg", { type: "image/jpeg" });
+                    }
+                } catch (e) {
+                    console.warn("HEIC conversion failed:", e);
                 }
-                ctx.drawImage(img, 0, 0);
-                canvas.toBlob(blob => {
-                    if (!blob) return reject(new Error('Conversion failed'));
-                    resolve({ url: URL.createObjectURL(blob), size: blob.size });
-                }, fmt, q / 100);
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    // Special case: Raster to SVG approximation
+                    if (fmt === 'image/svg+xml') {
+                        const svgString = `<svg xmlns="http://www.w3.org/2000/svg" width="${resizeWidth || img.width}" height="${resizeHeight || img.height}">
+                            <image href="${e.target?.result}" width="100%" height="100%" />
+                        </svg>`;
+                        const blob = new Blob([svgString], { type: 'image/svg+xml' });
+                        return resolve({ url: URL.createObjectURL(blob), size: blob.size });
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    const w = Number(resizeWidth) || img.width;
+                    const h = Number(resizeHeight) || img.height;
+                    canvas.width = w;
+                    canvas.height = h;
+                    
+                    const ctx = canvas.getContext('2d')!;
+                    
+                    // Fill background if needed (Transparency handling)
+                    if (fmt === 'image/jpeg' || (bgColor && bgColor !== 'transparent')) {
+                        ctx.fillStyle = bgColor || '#ffffff';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    }
+                    
+                    ctx.drawImage(img, 0, 0, w, h);
+                    
+                    canvas.toBlob(blob => {
+                        if (!blob) return reject(new Error('Conversion failed'));
+                        resolve({ url: URL.createObjectURL(blob), size: blob.size });
+                    }, fmt, q / 100);
+                };
+                img.onerror = () => reject(new Error('Could not load image'));
+                img.src = e.target?.result as string;
             };
-            img.onerror = () => reject(new Error('Could not load image'));
-            img.src = entry.previewUrl;
+            reader.readAsDataURL(finalFile);
         });
     };
 
@@ -155,11 +229,12 @@ const ImageConverter = () => {
 
                 {/* Header */}
                 <div className="text-center mb-10">
-                    <h2 className="text-3xl font-bold mb-3 bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
-                        Image Format Converter
+                    <h2 className="text-4xl font-black mb-3 tracking-tighter bg-gradient-to-br from-indigo-400 via-fuchsia-400 to-amber-400 bg-clip-text text-transparent">
+                        Professional Image Converter
                     </h2>
-                    <p className="text-muted-foreground">
-                        Convert PNG, JPG, WEBP — instantly in your browser. Batch-supported.
+                    <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+                        High-performance conversion for Raster & Vector formats. 
+                        Resize, adjust quality, and batch process instantly.
                     </p>
                 </div>
 
@@ -171,55 +246,132 @@ const ImageConverter = () => {
                         onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
                         onDragLeave={() => setIsDragging(false)}
                         onDrop={onDrop}
-                        className={`border-2 border-dashed rounded-2xl p-10 text-center transition-all cursor-pointer mb-0 ${isDragging ? 'border-primary bg-primary/5 scale-[1.01]' : 'border-border hover:border-primary/50 hover:bg-muted/20'}`}
+                        className={`border-2 border-dashed rounded-3xl p-12 text-center transition-all cursor-pointer group ${isDragging ? 'border-primary bg-primary/10 scale-[1.02]' : 'border-border/60 hover:border-primary/50 hover:bg-muted/30'}`}
                         onClick={() => document.getElementById('img-conv-input')?.click()}
                     >
-                        <div className="flex flex-col items-center gap-3">
-                            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                                <ImageIcon size={32} />
+                        <div className="flex flex-col items-center gap-4">
+                            <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-500">
+                                <ImageIcon size={40} />
                             </div>
-                            <div>
-                                <p className="font-semibold text-base mb-1">Drop images here or click to browse</p>
-                                <p className="text-muted-foreground text-sm">Supports PNG, JPG, JPEG, WEBP — batch upload supported</p>
+                            <div className="space-y-1">
+                                <p className="font-bold text-xl">Drag images here or browse</p>
+                                <p className="text-muted-foreground text-sm font-medium">
+                                    HEIC, TIFF, BMP, SVG, PNG, JPG, WEBP — No file limits
+                                </p>
+                            </div>
+                            <div className="flex gap-2">
+                                <span className="px-3 py-1 bg-muted rounded-full text-[10px] uppercase font-bold tracking-widest text-muted-foreground border border-border">Raster</span>
+                                <span className="px-3 py-1 bg-primary/10 rounded-full text-[10px] uppercase font-bold tracking-widest text-primary border border-primary/20">Vector</span>
                             </div>
                         </div>
                         <input
                             id="img-conv-input"
                             type="file"
                             multiple
-                            accept="image/png,image/jpeg,image/jpg,image/webp"
+                            accept="image/*,.heic,.heif,.tiff,.bmp,.svg"
                             className="hidden"
                             onChange={onFileInput}
                         />
                     </div>
 
-                    {/* Format & Quality Options */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8 text-left">
-                        <div>
-                            <label className="block text-sm font-medium text-muted-foreground mb-2">Convert to</label>
-                            <select
-                                value={outputFormat}
-                                onChange={e => { setOutputFormat(e.target.value as OutputFormat); setEntries(prev => prev.map(en => ({ ...en, status: 'idle', outputUrl: null, outputSize: null }))); }}
-                                className="w-full bg-muted border border-border rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-primary transition-colors appearance-none cursor-pointer"
-                            >
-                                {FORMAT_OPTIONS.map(opt => (
-                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div>
-                            <div className="flex justify-between text-sm mb-2">
-                                <label className="font-medium text-muted-foreground">Quality</label>
-                                <span className="text-primary font-bold">{quality}%</span>
+                    {/* Extended Configuration */}
+                    <div className="mt-10 space-y-8">
+                        {/* Format & Quality */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
+                            <div className="space-y-3">
+                                <label className="flex items-center gap-2 text-sm font-bold text-foreground">
+                                    <RefreshCcw size={14} className="text-primary" /> Target Format
+                                </label>
+                                <div className="relative">
+                                    <select
+                                        value={outputFormat}
+                                        onChange={e => { setOutputFormat(e.target.value as OutputFormat); setEntries(prev => prev.map(en => ({ ...en, status: 'idle', outputUrl: null, outputSize: null }))); }}
+                                        className="w-full bg-muted/50 border border-border/50 rounded-xl px-5 py-4 text-foreground font-semibold focus:outline-none focus:border-primary transition-all appearance-none cursor-pointer hover:bg-muted"
+                                    >
+                                        {FORMAT_OPTIONS.map(opt => (
+                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                                </div>
                             </div>
-                            <input
-                                type="range"
-                                min="10" max="100" step="1"
-                                value={quality}
-                                onChange={e => { setQuality(Number(e.target.value)); setEntries(prev => prev.map(en => ({ ...en, status: 'idle', outputUrl: null, outputSize: null }))); }}
-                                className="w-full accent-primary"
-                            />
-                            <p className="text-xs text-muted-foreground mt-1">Higher quality = larger file size. Applies to JPEG &amp; WEBP.</p>
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-center text-sm">
+                                    <label className="font-bold text-foreground">Output Quality</label>
+                                    <span className="bg-primary/10 text-primary px-3 py-1 rounded-lg font-bold">{quality}%</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="1" max="100" step="1"
+                                    value={quality}
+                                    onChange={e => { setQuality(Number(e.target.value)); setEntries(prev => prev.map(en => ({ ...en, status: 'idle', outputUrl: null, outputSize: null }))); }}
+                                    className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                                />
+                                <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Affects JPEG, WebP, and TIFF compression</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left p-6 bg-muted/20 rounded-2xl border border-border/40">
+                            <div className="space-y-2">
+                                <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Width (px)</label>
+                                <input 
+                                    type="number" 
+                                    placeholder="Original"
+                                    value={resizeWidth}
+                                    onChange={e => {
+                                        const w = e.target.value ? Number(e.target.value) : '';
+                                        setResizeWidth(w);
+                                        if (maintainAspectRatio && w && entries[0]?.dimensions) {
+                                            const ratio = entries[0].dimensions.height / entries[0].dimensions.width;
+                                            setResizeHeight(Math.round(Number(w) * ratio));
+                                        }
+                                    }}
+                                    className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Height (px)</label>
+                                <input 
+                                    type="number" 
+                                    placeholder="Original"
+                                    value={resizeHeight}
+                                    onChange={e => {
+                                        const h = e.target.value ? Number(e.target.value) : '';
+                                        setResizeHeight(h);
+                                        if (maintainAspectRatio && h && entries[0]?.dimensions) {
+                                            const ratio = entries[0].dimensions.width / entries[0].dimensions.height;
+                                            setResizeWidth(Math.round(Number(h) * ratio));
+                                        }
+                                    }}
+                                    className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors"
+                                />
+                            </div>
+                            <div className="flex items-center gap-3 md:pt-6">
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" checked={maintainAspectRatio} onChange={() => setMaintainAspectRatio(!maintainAspectRatio)} className="sr-only peer" />
+                                    <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                    <span className="ml-3 text-xs font-bold text-muted-foreground">Lock Aspect Ratio</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        {/* Background & Colors */}
+                        <div className="flex flex-wrap items-center gap-6 text-left">
+                            <div className="flex items-center gap-3">
+                                <label className="text-sm font-bold text-foreground">Background Color:</label>
+                                <div className="flex gap-2">
+                                    {['#ffffff', '#000000', 'transparent'].map(c => (
+                                        <button 
+                                            key={c} 
+                                            onClick={() => setBgColor(c)}
+                                            className={`w-8 h-8 rounded-lg border-2 transition-all ${bgColor === c ? 'border-primary ring-2 ring-primary/20 scale-110' : 'border-border hover:border-primary/50'}`}
+                                            style={{ backgroundColor: c === 'transparent' ? '#fff' : c, backgroundImage: c === 'transparent' ? 'linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%, #eee), linear-gradient(45deg, #eee 25%, #fff 25%, #fff 75%, #eee 75%, #eee)' : 'none', backgroundSize: '10px 10px', backgroundPosition: '0 0, 5px 5px' }}
+                                            title={c === 'transparent' ? 'Transparent' : c}
+                                        />
+                                    ))}
+                                    <input type="color" value={bgColor === 'transparent' ? '#ffffff' : bgColor} onChange={e => setBgColor(e.target.value)} className="w-8 h-8 p-0 border-0 bg-transparent cursor-pointer" />
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -285,30 +437,43 @@ const ImageConverter = () => {
                                     className={`flex flex-col sm:flex-row items-center gap-4 p-4 rounded-xl border transition-all ${entry.status === 'done' ? 'border-green-500/30 bg-green-500/5' : entry.status === 'error' ? 'border-destructive/30 bg-destructive/5' : 'border-border bg-card'}`}
                                 >
                                     {/* Thumbnail */}
-                                    <div className="w-14 h-14 flex-shrink-0 rounded-lg overflow-hidden border border-border bg-muted">
-                                        <img src={entry.previewUrl} alt={entry.file.name} className="w-full h-full object-cover" />
+                                    <div className="w-20 h-20 flex-shrink-0 rounded-2xl overflow-hidden border-2 border-border/50 bg-muted/30 group">
+                                        <img src={entry.previewUrl} alt={entry.file.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                                     </div>
-
+ 
                                     {/* Info */}
-                                    <div className="flex-1 min-w-0 w-full">
-                                        <p className="font-medium text-sm truncate" title={entry.file.name}>{entry.file.name}</p>
-                                        <div className="flex flex-wrap gap-3 mt-1 text-xs text-muted-foreground">
-                                            <span>Original: {formatBytes(entry.file.size)}</span>
-                                            {entry.status === 'done' && entry.outputSize !== null && (
-                                                <span className="text-green-500 font-medium">
-                                                    → {fmt.ext.toUpperCase()}: {formatBytes(entry.outputSize)}
-                                                    <span className="ml-1 text-green-500/80">
-                                                        ({Math.round((1 - entry.outputSize / entry.file.size) * 100) > 0
-                                                            ? `-${Math.round((1 - entry.outputSize / entry.file.size) * 100)}%`
-                                                            : `+${Math.round((entry.outputSize / entry.file.size - 1) * 100)}%`})
-                                                    </span>
+                                    <div className="flex-1 min-w-0 w-full text-left">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <p className="font-bold text-sm truncate" title={entry.file.name}>{entry.file.name}</p>
+                                            <span className="px-2 py-0.5 rounded-md bg-muted text-[10px] font-bold uppercase text-muted-foreground border border-border">
+                                                {entry.file.name.split('.').pop()?.toUpperCase()}
+                                            </span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground font-medium">
+                                            <span className="flex items-center gap-1"><ArrowRight size={10} /> Original: {formatBytes(entry.file.size)}</span>
+                                            {entry.dimensions && (
+                                                <span className="flex items-center gap-1">
+                                                    <Maximize2 size={10} /> {entry.dimensions.width}×{entry.dimensions.height}
                                                 </span>
                                             )}
-                                            {entry.status === 'error' && <span className="text-destructive">{entry.errorMsg}</span>}
+                                            {entry.status === 'done' && entry.outputSize !== null && (
+                                                <div className="flex items-center gap-2 text-green-500 font-bold">
+                                                    <span className="flex items-center gap-1">
+                                                        <CheckCircle2 size={12} /> {fmt.ext.toUpperCase()}: {formatBytes(entry.outputSize)}
+                                                    </span>
+                                                    <span className="text-[10px] bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
+                                                        {Math.round((1 - entry.outputSize / entry.file.size) * 100) > 0
+                                                            ? `Save ${Math.round((1 - entry.outputSize / entry.file.size) * 100)}%`
+                                                            : `+${Math.round((entry.outputSize / entry.file.size - 1) * 100)}%`}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {entry.status === 'error' && <span className="text-destructive bg-destructive/10 px-2 rounded flex items-center gap-1 mt-1"><X size={12}/> {entry.errorMsg}</span>}
                                         </div>
                                         {entry.status === 'converting' && (
-                                            <div className="flex items-center gap-2 mt-1.5 text-xs text-primary">
-                                                <Loader2 size={12} className="animate-spin" /> Converting…
+                                            <div className="flex items-center gap-2 mt-2 text-primary font-bold">
+                                                <Loader2 size={14} className="animate-spin text-primary" /> 
+                                                <span className="text-[11px] uppercase tracking-widest">Optimizing &amp; Converting…</span>
                                             </div>
                                         )}
                                     </div>

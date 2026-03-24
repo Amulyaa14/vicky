@@ -310,6 +310,19 @@ const Converter = () => {
     // Auto-extract on file select for preview
     const handleFileSelect = useCallback(async (selectedFile: File) => {
         console.log('UI: File selected', selectedFile.name, 'Size:', selectedFile.size);
+        
+        // Validation: Only PDF allowed
+        if (selectedFile.type !== 'application/pdf' && !selectedFile.name.toLowerCase().endsWith('.pdf')) {
+            setError('Only PDF files are allowed. Please upload a valid PDF document.');
+            return;
+        }
+
+        // Validation: Max size 25MB
+        if (selectedFile.size > 25 * 1024 * 1024) {
+            setError('File is too large. Maximum supported size is 25MB.');
+            return;
+        }
+
         setFile(selectedFile);
         setError(null);
         setProgress(0);
@@ -332,12 +345,15 @@ const Converter = () => {
             }
         } catch (err: any) {
             console.error('UI: Extraction error caught in handler:', err);
-            setError('Could not extract text. Please ensure you upload a valid PDF file for conversion.');
+            setError('Could not extract text. The PDF might be corrupted or password-protected.');
         } finally {
-            setIsExtracting(false);
-            console.log('UI: Extraction state reset (isExtracting=false)');
+            // Simulate processing finish
+            setTimeout(() => {
+                setIsExtracting(false);
+                console.log('UI: Extraction state reset (isExtracting=false)');
+            }, 1000);
         }
-    }, []);
+    }, [extractPagesWithLayout]);
 
     const handleRemoveFile = useCallback(() => {
         setFile(null);
@@ -460,13 +476,26 @@ const Converter = () => {
 
                 {/* Main Interface */}
                 <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-8 mb-8 sm:mb-12">
-                    <FileUpload onFileSelect={handleFileSelect} currentFile={file} onRemoveFile={handleRemoveFile} />
+                    <FileUpload 
+                        onFileSelect={handleFileSelect} 
+                        currentFile={file} 
+                        onRemoveFile={handleRemoveFile}
+                        accept="application/pdf"
+                        supportedFormats="PDF Documents (*.pdf)"
+                    />
 
                     {/* Extraction indicator */}
                     {isExtracting && (
-                        <div className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                            <Loader2 className="animate-spin" size={16} />
-                            Analyzing document layout…
+                        <div className="mt-6 flex flex-col items-center justify-center gap-4 py-8">
+                            <div className="relative w-16 h-16">
+                                <div className="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
+                                <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                <FileText className="absolute inset-0 m-auto text-primary" size={24} />
+                            </div>
+                            <div className="text-center">
+                                <p className="text-base font-semibold text-foreground">Processing PDF Content</p>
+                                <p className="text-xs text-muted-foreground mt-1 tracking-widest uppercase">Analyzing layout & extracting text…</p>
+                            </div>
                         </div>
                     )}
 

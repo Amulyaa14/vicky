@@ -25,6 +25,22 @@ app.route('/api/auth', authRouter);
 app.route('/api/history', historyRouter);
 
 // Basic health check route
-app.get('/api/health', (c) => c.json({ status: 'ok', message: 'Backend is running' }));
+app.get('/api/health', async (c) => {
+    try {
+        // Try a simple query to verify D1 connection
+        await c.env.DB.prepare('SELECT 1').run();
+        return c.json({ 
+            status: 'ok', 
+            message: 'Backend is running',
+            database: 'connected'
+        });
+    } catch (e: any) {
+        return c.json({ 
+            status: 'error', 
+            message: 'Backend is running but database is disconnected',
+            error: e.message
+        }, 500);
+    }
+});
 
 export default app;

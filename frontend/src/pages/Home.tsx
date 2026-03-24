@@ -145,8 +145,15 @@ const Home = () => {
                                 </div>
                             </div>
                         </div>
-                        <div className="h-48 sm:h-full min-h-[200px] sm:min-h-[280px] flex items-center justify-center bg-background/50 rounded-2xl border border-dashed border-muted-foreground/25">
-                            <span className="text-muted-foreground font-medium text-sm text-center px-4">Illustration / Dashboard Preview</span>
+                        <div className="h-[300px] sm:h-[400px] lg:h-[500px] flex items-center justify-center bg-background/50 rounded-2xl border border-primary/20 overflow-hidden shadow-2xl relative group">
+                            <img 
+                                src="file:///C:/Users/INDUJA/.gemini/antigravity/brain/f2005ddf-e61d-4502-bde2-dee4c07a7eb6/app_dashboard_preview_1773678329582.png" 
+                                alt="QuickTools Dashboard Preview" 
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-8">
+                                <p className="text-white text-lg font-semibold drop-shadow-lg">Experience Professional Editing Tools</p>
+                            </div>
                         </div>
                     </div>
                 </Card>

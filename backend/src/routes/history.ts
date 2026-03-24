@@ -46,6 +46,11 @@ historyRouter.post('/document', authMiddleware, async (c) => {
         const user = c.get('user');
         const { originalFormat, targetFormat, fileName } = await c.req.json();
 
+        // Backend Validation: Only PDF allowed
+        if (originalFormat !== 'pdf' || !fileName.toLowerCase().endsWith('.pdf')) {
+            return c.json({ error: 'Only PDF files are allowed for conversion' }, 400);
+        }
+
         await c.env.DB.prepare(
             'INSERT INTO document_history (user_id, original_format, target_format, file_name) VALUES (?, ?, ?, ?)'
         ).bind(user.id, originalFormat, targetFormat, fileName).run();

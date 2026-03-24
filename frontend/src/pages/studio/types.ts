@@ -46,6 +46,7 @@ export interface Clip {
     background?: string;
     speed?: number; // 0.25 to 4
     adjustments?: ClipAdjustments;
+    muted?: boolean;
 }
 
 export interface TransitionItem {

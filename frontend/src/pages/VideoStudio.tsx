@@ -32,11 +32,13 @@ const VideoStudio: React.FC = () => {
     /* ─── player state ─── */
     const videoRef = useRef<HTMLVideoElement>(null);
     const [isPlaying, setIsPlaying] = useState(false);
-    const [currentTime, setCurrentTime] = useState(0);
-    const [duration, setDuration] = useState(0);
+    const [currentTime, setCurrentTime] = useState(0); // This will now represent global project time
+    const [duration, setDuration] = useState(0); // This will now represent global project duration
     const [volume, setVolume] = useState(1);
     const [muted, setMuted] = useState(false);
     const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
+    const [isPreviewMode, setIsPreviewMode] = useState(false); // If true, only play selected clip
+    const [previewClipId, setPreviewClipId] = useState<string | null>(null);
 
     /* ─── left panel ─── */
     type LeftTab = 'media' | 'library' | 'templates' | 'transitions';
@@ -91,21 +93,95 @@ const VideoStudio: React.FC = () => {
         else { v.pause(); setIsPlaying(false); }
     }, []);
 
+    /* ─── Sequencer Logic ─── */
+    useEffect(() => {
+        // Calculate total project duration
+        const total = clips.reduce((acc, clip) => acc + (clip.endTrim - clip.startTrim), 0);
+        setDuration(total);
+    }, [clips]);
+
+    const getCurrentClipAtTime = useCallback((time: number) => {
+        let accumulatedTime = 0;
+        for (let i = 0; i < clips.length; i++) {
+            const clip = clips[i];
+            const clipDuration = (clip.endTrim - clip.startTrim);
+            if (time >= accumulatedTime && time < accumulatedTime + clipDuration) {
+                return { clip, index: i, offset: time - accumulatedTime };
+            }
+            accumulatedTime += clipDuration;
+        }
+        return null;
+    }, [clips]);
+
+    useEffect(() => {
+        if (isPreviewMode) return; // Handled separately
+
+        const v = videoRef.current;
+        if (!v) return;
+
+        const { clip, offset } = getCurrentClipAtTime(currentTime) || {};
+        
+        if (clip) {
+            if (activeVideoUrl !== clip.src) {
+                setActiveVideoUrl(clip.src || null);
+                v.currentTime = (clip.startTrim || 0) + offset!;
+            } else {
+                // If it's the same clip, ensure we don't drift too much
+                const targetTime = (clip.startTrim || 0) + offset!;
+                if (Math.abs(v.currentTime - targetTime) > 0.5) {
+                    v.currentTime = targetTime;
+                }
+            }
+            // Apply volume
+            v.muted = muted || !!clip.muted;
+        } else if (currentTime >= duration && duration > 0) {
+            setIsPlaying(false);
+            setCurrentTime(duration);
+        }
+    }, [currentTime, clips, isPreviewMode, duration, muted, activeVideoUrl, getCurrentClipAtTime]);
+
     useEffect(() => {
         const v = videoRef.current;
         if (!v) return;
-        const onTime = () => setCurrentTime(v.currentTime);
-        const onMeta = () => setDuration(v.duration || 0);
-        const onEnd = () => setIsPlaying(false);
-        v.addEventListener('timeupdate', onTime);
+
+        let frameId: number;
+        const update = () => {
+            if (isPlaying && !isPreviewMode) {
+                const { clip, offset } = getCurrentClipAtTime(currentTime) || {};
+                if (clip) {
+                    // Update global time based on video's progress within the current clip
+                    const clipStartTime = clips.slice(0, clips.indexOf(clip)).reduce((acc, c) => acc + (c.endTrim - c.startTrim), 0);
+                    const newGlobalTime = clipStartTime + (v.currentTime - clip.startTrim);
+                    setCurrentTime(newGlobalTime);
+                }
+            }
+            frameId = requestAnimationFrame(update);
+        };
+        frameId = requestAnimationFrame(update);
+        return () => cancelAnimationFrame(frameId);
+    }, [isPlaying, isPreviewMode, currentTime, clips, getCurrentClipAtTime]);
+
+    useEffect(() => {
+        const v = videoRef.current;
+        if (!v) return;
+        const onMeta = () => {
+            if (isPreviewMode && previewClipId) {
+                const clip = clips.find(c => c.id === previewClipId);
+                if (clip) v.currentTime = clip.startTrim;
+            }
+        };
+        const onEnd = () => {
+            if (isPreviewMode) {
+                setIsPlaying(false);
+            }
+        };
         v.addEventListener('loadedmetadata', onMeta);
         v.addEventListener('ended', onEnd);
         return () => {
-            v.removeEventListener('timeupdate', onTime);
             v.removeEventListener('loadedmetadata', onMeta);
             v.removeEventListener('ended', onEnd);
         };
-    }, [activeVideoUrl]);
+    }, [isPreviewMode, previewClipId, clips]);
 
     useEffect(() => {
         if (videoRef.current && selectedClip) {
@@ -225,6 +301,27 @@ const VideoStudio: React.FC = () => {
         }
     };
 
+    /* ─── preview ─── */
+    const previewClip = (id: string) => {
+        const clip = clips.find(c => c.id === id);
+        if (!clip) return;
+        setIsPreviewMode(true);
+        setPreviewClipId(id);
+        setActiveVideoUrl(clip.src || null);
+        setIsPlaying(true);
+        if (videoRef.current) {
+            videoRef.current.currentTime = clip.startTrim;
+            videoRef.current.play();
+        }
+    };
+
+    const stopPreview = () => {
+        setIsPreviewMode(false);
+        setPreviewClipId(null);
+        setIsPlaying(false);
+        if (videoRef.current) videoRef.current.pause();
+    };
+
     /* ─── transitions ─── */
     const setTransition = (afterId: string, type: string, dur: number) => {
         setTransitions(p => {
@@ -232,6 +329,11 @@ const VideoStudio: React.FC = () => {
             return [...without, { afterClipId: afterId, type, duration: dur }];
         });
         setTransitionPicker(null);
+    };
+
+    const toggleClipMute = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setClips(p => p.map(c => c.id === id ? { ...c, muted: !c.muted } : c));
     };
 
     /* ─── templates ─── */
@@ -779,29 +881,53 @@ const VideoStudio: React.FC = () => {
                         <div className="flex-1" />
                         <span className="text-[10px] text-muted-foreground/60 font-medium">{clips.length} clip{clips.length !== 1 ? 's' : ''}</span>
                     </div>
-                    <div className="flex-1 flex items-center overflow-x-auto scrollbar-thin px-4 gap-0">
+                    <div className="flex-1 flex items-center overflow-x-auto scrollbar-thin px-4 gap-0 relative group/timeline">
                         {clips.length === 0 && (
                             <p className="text-[10px] text-muted-foreground/60 mx-auto">
                                 {dragOverTimeline ? '📥 Drop here to add to timeline' : 'Add media from the left panel or drag & drop here'}
                             </p>
                         )}
+
+                        {/* Playhead Indicator */}
+                        {duration > 0 && (
+                            <div 
+                                className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-40 pointer-events-none transition-all duration-75"
+                                style={{ left: `calc(1rem + ${currentTime * 20}px)` }}
+                            >
+                                <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-red-500 rounded-full shadow-lg" />
+                            </div>
+                        )}
+
                         {clips.map((clip, idx) => {
                             const w = Math.max(90, (clip.endTrim - clip.startTrim) * 20);
                             const trans = transitions.find(t => t.afterClipId === clip.id);
                             return (
                                 <React.Fragment key={clip.id}>
-                                    <div onClick={() => { setSelectedClipId(clip.id); if (clip.src) setActiveVideoUrl(clip.src); }}
+                                    <div onClick={() => { setSelectedClipId(clip.id); }}
+                                        onDoubleClick={() => previewClip(clip.id)}
                                         className={`relative h-[68px] rounded-xl flex flex-col justify-center px-3 cursor-pointer shrink-0 transition-all border-2 ${selectedClipId === clip.id ? 'border-violet-400 ring-1 ring-violet-500/30 shadow-lg shadow-violet-500/10' : 'border-transparent hover:border-white/10'}`}
                                         style={{ width: w, background: `linear-gradient(135deg, ${clip.color}22, ${clip.color}11)` }}>
                                         <div className="absolute top-0 left-0 right-0 h-1 rounded-t-lg" style={{ background: clip.color }} />
                                         {clip.thumbnailUrl && (
                                             <img src={clip.thumbnailUrl} alt="" className="absolute inset-0 w-full h-full object-cover rounded-lg opacity-30" />
                                         )}
-                                        <span className="text-[10px] font-bold text-white truncate relative z-10">{clip.label}</span>
-                                        <span className="text-[9px] text-gray-400 relative z-10">{fmt(clip.endTrim - clip.startTrim)}</span>
-                                        {clip.textOverlay && (
-                                            <span className="text-[8px] text-violet-300 font-semibold truncate relative z-10">✏️ {clip.textOverlay}</span>
-                                        )}
+                                        <div className="relative z-10 flex flex-col h-full justify-between py-2">
+                                            <span className="text-[10px] font-bold text-white truncate">{clip.label}</span>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[9px] text-gray-400">{fmt(clip.endTrim - clip.startTrim)}</span>
+                                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button onClick={(e) => { e.stopPropagation(); previewClip(clip.id); }} 
+                                                        className="p-1 hover:bg-white/10 rounded transition-colors" title="Preview Clip">
+                                                        <Play size={10} className="text-white" fill="currentColor" />
+                                                    </button>
+                                                    <button onClick={(e) => toggleClipMute(clip.id, e)} 
+                                                        className={`p-1 rounded transition-colors ${clip.muted ? 'bg-red-500/20 text-red-400' : 'hover:bg-white/10 text-white'}`} 
+                                                        title={clip.muted ? "Unmute Clip" : "Mute Clip"}>
+                                                        {clip.muted ? <VolumeX size={10} /> : <Volume2 size={10} />}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
                                         <button onClick={(e) => { e.stopPropagation(); deleteClip(clip.id); }}
                                             className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-600 hover:bg-red-500 rounded-full flex items-center justify-center shadow-lg transition-colors z-20">
                                             <X size={10} />
@@ -948,7 +1074,7 @@ const VideoStudio: React.FC = () => {
                                     )}
 
                                     <button
-                                        onClick={() => exporter.startExport(clips, exportSettings)}
+                                        onClick={() => exporter.startExport(clips, transitions, exportSettings)}
                                         disabled={exporter.isExporting}
                                         className="w-full mt-5 py-3 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2">
                                         {exporter.isExporting ? (

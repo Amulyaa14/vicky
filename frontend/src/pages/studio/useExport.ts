@@ -27,7 +27,7 @@ export interface UseExportReturn {
     exportError: string | null;
     exportDone: boolean;
     downloadUrl: string | null;
-    startExport: (clips: import('./types').Clip[], settings: ExportSettings) => Promise<void>;
+    startExport: (clips: import('./types').Clip[], transitions: import('./types').TransitionItem[], settings: ExportSettings) => Promise<void>;
     downloadFile: (filename?: string) => void;
     resetExport: () => void;
 }
@@ -51,6 +51,7 @@ export function useExport(): UseExportReturn {
 
     const exportWithFFmpeg = useCallback(async (
         clips: import('./types').Clip[],
+        _transitions: import('./types').TransitionItem[],
         settings: ExportSettings
     ): Promise<Blob> => {
         const { FFmpeg } = await import('@ffmpeg/ffmpeg');
@@ -86,23 +87,29 @@ export function useExport(): UseExportReturn {
         // 2. Build Complex Filter for Trimming and Concatenation
         // Format: [0:v]trim=start=1:end=2,setpts=PTS-STARTPTS[v0]; [0:a]atrim=start=1:end=2,asetpts=PTS-STARTPTS[a0]; ... [v0][a0][v1][a1]concat=n=2:v=1:a=1[outv][outa]
         let filterStr = '';
-        let concatVideoStr = '';
-        let concatAudioStr = '';
 
         clips.forEach((clip, i) => {
             const inputIdx = uniqueSrcs.indexOf(clip.src!);
+            const vLabel = `v${i}`;
+            const aLabel = `a${i}`;
             
-            // Video part
-            filterStr += `[${inputIdx}:v]trim=start=${clip.startTrim}:end=${clip.endTrim},setpts=PTS-STARTPTS,scale=${scale}:force_original_aspect_ratio=decrease,pad=${scale.replace(':', ':')}:(ow-iw)/2:(oh-ih)/2[v${i}]; `;
+            // Video part: scale, pad, trim, setpts, format
+            filterStr += `[${inputIdx}:v]trim=start=${clip.startTrim}:end=${clip.endTrim},setpts=PTS-STARTPTS,scale=${scale}:force_original_aspect_ratio=decrease,pad=${scale.replace(':', ':')}:(ow-iw)/2:(oh-ih)/2,format=yuv420p[${vLabel}]; `;
             
-            // Audio part (assume audio exists for now)
-            filterStr += `[${inputIdx}:a]atrim=start=${clip.startTrim}:end=${clip.endTrim},asetpts=PTS-STARTPTS[a${i}]; `;
-            
-            concatVideoStr += `[v${i}]`;
-            concatAudioStr += `[a${i}]`;
+            // Audio part: trim, setpts, volume, format
+            const vol = clip.muted ? 0 : 1;
+            filterStr += `[${inputIdx}:a]atrim=start=${clip.startTrim}:end=${clip.endTrim},asetpts=PTS-STARTPTS,volume=${vol},aresample=44100,aformat=sample_fmts=fltp:channel_layouts=stereo[${aLabel}]; `;
         });
 
-        filterStr += `${concatVideoStr}${concatAudioStr}concat=n=${clips.length}:v=1:a=1[outv][outa]`;
+        // 3. Chain Clips (Basic concatenation for now, xfade is extremely complex to align with audio)
+        // Transition support in FFmpeg wasm is limited by core performance, keeping it simple for stability.
+        let concatV = '';
+        let concatA = '';
+        clips.forEach((_, i) => {
+            concatV += `[v${i}]`;
+            concatA += `[a${i}]`;
+        });
+        filterStr += `${concatV}${concatA}concat=n=${clips.length}:v=1:a=1[outv][outa]`;
 
         const outputExt = settings.format === 'gif' ? 'gif' : settings.format;
         const outputName = `output.${outputExt}`;
@@ -141,7 +148,7 @@ export function useExport(): UseExportReturn {
         return new Blob([data], { type: mimeType });
     }, []);
 
-    const startExport = useCallback(async (clips: import('./types').Clip[], settings: ExportSettings) => {
+    const startExport = useCallback(async (clips: import('./types').Clip[], _transitions: import('./types').TransitionItem[], settings: ExportSettings) => {
         if (clips.length === 0) {
             setExportError('Timeline is empty.');
             return;
@@ -156,7 +163,7 @@ export function useExport(): UseExportReturn {
             let blob: Blob;
             // Force FFmpeg for timeline export because MediaRecorder cannot handle concatenation easily
             if (typeof crossOriginIsolated !== 'undefined' && crossOriginIsolated) {
-                blob = await exportWithFFmpeg(clips, settings);
+                blob = await exportWithFFmpeg(clips, _transitions, settings);
             } else {
                  setExportError('Processing requires cross-origin isolation. Please ensure headers are set.');
                  setIsExporting(false);
