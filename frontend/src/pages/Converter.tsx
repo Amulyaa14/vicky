@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle2, Loader2, Eye, Download, Pencil } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Loader2, Eye, Download, Pencil, FileText } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import FileUpload from '../components/ui/FileUpload';
 import AdSpace from '../components/ui/AdSpace';

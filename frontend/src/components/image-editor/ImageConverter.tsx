@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { ArrowRight, Download, Loader2, ImageIcon, CheckCircle2, RefreshCcw } from 'lucide-react';
+import { ArrowRight, Download, Loader2, ImageIcon, CheckCircle2, RefreshCcw, ChevronDown, Maximize2, X } from 'lucide-react';
 import Button from '@/components/ui/Button';
 
 type OutputFormat = 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif' | 'image/bmp' | 'image/tiff' | 'image/svg+xml';
