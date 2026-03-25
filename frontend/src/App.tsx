@@ -69,6 +69,7 @@ function App() {
             <Route path="converter" element={<ProtectedRoute><Converter /></ProtectedRoute>} />
             <Route path="image-editor" element={<ProtectedRoute><ImageEditor /></ProtectedRoute>} />
             <Route path="video-tools" element={<ProtectedRoute><VideoTools /></ProtectedRoute>} />
+            <Route path="ai-tools" element={<ProtectedRoute><AITools /></ProtectedRoute>} />
             <Route path="bg-remover" element={<ProtectedRoute><BgRemover /></ProtectedRoute>} />
             <Route path="video-studio" element={<ProtectedRoute><VideoStudio /></ProtectedRoute>} />
             <Route path="ats-checker" element={<ProtectedRoute><ATSChecker /></ProtectedRoute>} />
