@@ -57,8 +57,6 @@ function App() {
           <Route path="/" element={<Layout />}>
             <Route index element={<Home />} />
             <Route path="expandable-tabs" element={<ExpandableTabsDemo />} />
-            <Route path="converter" element={<Converter />} />
-            <Route path="image-editor" element={<ImageEditor />} />
 
             {/* Public Auth Routes */}
             <Route path="login" element={<Login />} />
@@ -68,6 +66,9 @@ function App() {
             <Route path="reset-password" element={<ResetPassword />} />
 
             {/* Protected Routes */}
+            <Route path="converter" element={<ProtectedRoute><Converter /></ProtectedRoute>} />
+            <Route path="image-editor" element={<ProtectedRoute><ImageEditor /></ProtectedRoute>} />
+            <Route path="video-tools" element={<ProtectedRoute><VideoTools /></ProtectedRoute>} />
             <Route path="bg-remover" element={<ProtectedRoute><BgRemover /></ProtectedRoute>} />
             <Route path="video-studio" element={<ProtectedRoute><VideoStudio /></ProtectedRoute>} />
             <Route path="ats-checker" element={<ProtectedRoute><ATSChecker /></ProtectedRoute>} />
