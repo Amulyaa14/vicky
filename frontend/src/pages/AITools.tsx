@@ -18,86 +18,7 @@ const countStats = (txt: string) => {
     return { words, chars: txt.length };
 };
 
-/* ─── grammar error patterns (client-side) ─── */
-const COMMON_GRAMMAR_FIXES: [RegExp, any][] = [
-    [/\bi am\b/gi, 'I am'],
-    [/\bi've\b/gi, 'I\'ve'],
-    [/\bi'll\b/gi, 'I\'ll'],
-    [/\bi'd\b/gi, 'I\'d'],
-    [/\byour're\b/gi, "you're"],
-    [/\btheir's\b/gi, "theirs"],
-    [/\bwont\b/gi, "won't"],
-    [/\bcant\b/gi, "can't"],
-    [/\bdont\b/gi, "don't"],
-    [/\bisnt\b/gi, "isn't"],
-    [/\bwerent\b/gi, "weren't"],
-    [/\bwouldnt\b/gi, "wouldn't"],
-    [/\bcouldnt\b/gi, "couldn't"],
-    [/\bshouldnt\b/gi, "shouldn't"],
-    [/\bhasnt\b/gi, "hasn't"],
-    [/\bhavent\b/gi, "haven't"],
-    [/\bhadnt\b/gi, "hadn't"],
-    [/\bdidnt\b/gi, "didn't"],
-    [/\bthere\s+is\s+(\w+s)\b/gi, (_: string, p1: string) => `there are ${p1}`],
-    [/\b(\w)\s+,/g, '$1,'],
-    [/\s{2,}/g, ' '],
-];
 
-function fixGrammarLocal(text: string): string {
-    let result = text;
-    COMMON_GRAMMAR_FIXES.forEach(([pattern, replacement]) => {
-        if (typeof replacement === 'string') {
-            result = result.replace(pattern, replacement);
-        } else {
-            result = result.replace(pattern, replacement as any);
-        }
-    });
-    result = result.replace(/(^\s*|[.!?]\s+)([a-z])/g, (_, prefix, letter) => prefix + letter.toUpperCase());
-    return result;
-}
-
-function summariseLocal(text: string): string {
-    const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
-    if (sentences.length <= 3) return text;
-    const picked = [sentences[0]];
-    for (let i = 1; i < sentences.length; i += Math.max(1, Math.floor(sentences.length / 3))) {
-        picked.push(sentences[i]);
-    }
-    return picked.join(' ').trim();
-}
-
-function improveLocal(text: string): string {
-    if (!text.trim()) return text;
-    let improved = fixGrammarLocal(text);
-    improved = improved
-        .replace(/\bvery\s+good\b/gi, 'excellent')
-        .replace(/\bvery\s+bad\b/gi, 'terrible')
-        .replace(/\bvery\s+big\b/gi, 'enormous')
-        .replace(/\bvery\s+small\b/gi, 'tiny')
-        .replace(/\bvery\s+fast\b/gi, 'rapid')
-        .replace(/\bgot\b/gi, 'obtained')
-        .replace(/\ba lot of\b/gi, 'numerous')
-        .replace(/\bthing\b/gi, 'element')
-        .replace(/\bget\b/gi, 'obtain')
-        .replace(/\bmake\b/gi, 'create');
-    return improved;
-}
-
-function checkGrammarIssues(text: string): string[] {
-    const issues: string[] = [];
-    if (text.trim() === '') return issues;
-    if (!/[.!?]$/.test(text.trim())) issues.push('Text may be missing a closing punctuation mark.');
-    if (/\b(there|their|they're)\b/gi.test(text)) {
-        const matches = text.match(/\b(there|their|they're)\b/gi) || [];
-        if (matches.length > 2) issues.push('Review usage of "there/their/they\'re".');
-    }
-    if (/\b(your|you're)\b/gi.test(text)) issues.push('Check correct usage of "your / you\'re".');
-    if (/\b(\w{3,})\s+\1\b/gi.test(text)) issues.push('Possible repeated word detected.');
-    if (/[,]{2,}/g.test(text)) issues.push('Double comma found.');
-    if (text.toLowerCase() === text && text.length > 20) issues.push('Text has no capitalisation — check sentence starts.');
-    if (issues.length === 0) issues.push('No obvious grammar issues found. Text looks good!');
-    return issues;
-}
 
 /* ─── Templates ─── */
 const TEMPLATES: { label: string; icon: React.ElementType; color: string; text: string }[] = [
@@ -139,37 +60,45 @@ const AITools = () => {
     useEffect(() => { localStorage.setItem(LS_KEY, text); }, [text]);
 
     const stats = countStats(text);
-    const simulate = (ms: number) => new Promise(res => setTimeout(res, ms));
 
-    const runAction = useCallback(async (fn: () => string, label: string) => {
+    const runAction = useCallback(async (actionId: string, label: string) => {
         if (!text.trim()) { toast.error('Please enter some text first.'); return; }
         setIsBusy(true);
         setAction(label);
         setOutput('');
-        await simulate(700 + Math.random() * 500);
-        const result = fn();
-        setOutput(result);
-
-        // Save to History Database
-        if (token) {
-            try {
-                await fetch(`${API_URL}/api/history/ai`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ toolName: label, inputText: text, outputText: result })
-                });
-            } catch (e) {
-                console.error("Failed to save history:", e);
+        try {
+            const response = await fetch(`${API_URL}/api/ai/writing`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: actionId, text })
+            });
+            const data = await response.json();
+            if (data.error) throw new Error(data.error);
+            const result = data.result;
+            setOutput(result);
+            if (token) {
+                try {
+                    await fetch(`${API_URL}/api/history/ai`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ toolName: label, inputText: text, outputText: result })
+                    });
+                } catch (e) {
+                    console.error("Failed to save history:", e);
+                }
             }
+            toast.success(`${label} complete!`);
+        } catch (e: any) {
+            console.error(e);
+            toast.error(e.message || 'AI processing failed. Check your connection.');
+        } finally {
+            setIsBusy(false);
         }
-
-        setIsBusy(false);
-        toast.success(`${label} complete!`);
     }, [text, token]);
 
-    const handleSummarise = () => runAction(() => summariseLocal(text), 'Summarize');
-    const handleFixGrammar = () => runAction(() => fixGrammarLocal(text), 'Fix Grammar');
-    const handleImprove = () => runAction(() => improveLocal(text), 'Improve Writing');
+    const handleSummarise = () => runAction('summarize', 'Summarize');
+    const handleFixGrammar = () => runAction('grammar', 'Fix Grammar');
+    const handleImprove = () => runAction('improve', 'Improve Writing');
 
     const handleTemplate = (t: typeof TEMPLATES[0]) => {
         setText(t.text);
@@ -217,35 +146,48 @@ const AITools = () => {
         if (!text.trim()) { toast.error('Enter text first.'); return; }
         setGrammarStatus('running');
         setGrammarIssues([]);
-        await simulate(1200);
-        const issues = checkGrammarIssues(text);
-        setGrammarIssues(issues);
-        setGrammarStatus('done');
+        try {
+            const response = await fetch(`${API_URL}/api/ai/writing`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'grammar-check', text })
+            });
+            const data = await response.json();
+            if (data.error) throw new Error(data.error);
+            const issues = data.result.split('\n').map((s: string) => s.trim().replace(/^[-*]\s*/, '')).filter(Boolean);
+            setGrammarIssues(issues.length > 0 ? issues : ['No obvious grammar issues found. Text looks good!']);
+        } catch (e: any) {
+            toast.error(e.message || 'Grammar check failed.');
+        } finally {
+            setGrammarStatus('done');
+        }
     };
 
     const handlePlagiarismScan = async () => {
         if (!text.trim()) { toast.error('Enter text first.'); return; }
         setPlagiarismStatus('running');
         setPlagiarismResult('');
-        await simulate(1800);
-        setPlagiarismResult('✅ No plagiarism detected. Content appears original.');
-        setPlagiarismStatus('done');
+        try {
+            const response = await fetch(`${API_URL}/api/ai/plagiarism`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text })
+            });
+            const data = await response.json();
+            if (data.error) throw new Error(data.error);
+            setPlagiarismResult(data.result);
+        } catch (e: any) {
+            toast.error(e.message || 'Scan failed.');
+            setPlagiarismResult('Error scanning text. Try again later.');
+        } finally {
+            setPlagiarismStatus('done');
+        }
     };
 
     const quickActions = [
-        {
-            label: 'Make Formal', icon: Briefcase, desc: 'Convert to professional tone',
-            fn: () => text.replace(/gonna|wanna|gotta|kinda|sorta/gi, m =>
-                ({ gonna: 'going to', wanna: 'want to', gotta: 'have to', kinda: 'somewhat', sorta: 'somewhat' } as any)[m.toLowerCase()] || m),
-        },
-        {
-            label: 'Make Casual', icon: MessageSquare, desc: 'Make it friendly & approachable',
-            fn: () => text.replace(/\bI am\b/g, "I'm").replace(/\bdo not\b/gi, "don't").replace(/\bcannot\b/gi, "can't").replace(/\bwill not\b/gi, "won't"),
-        },
-        {
-            label: 'Expand Text', icon: ArrowDown, desc: 'Add elaboration & detail',
-            fn: () => text + '\n\nFurthermore, it is worth noting that the points raised above highlight the importance of careful consideration and thorough analysis. Taking a holistic approach ensures that all relevant factors are accounted for.',
-        },
+        { label: 'Make Formal', icon: Briefcase, desc: 'Convert to professional tone', actionId: 'formal' },
+        { label: 'Make Casual', icon: MessageSquare, desc: 'Make it friendly & approachable', actionId: 'casual' },
+        { label: 'Expand Text', icon: ArrowDown, desc: 'Add elaboration & detail', actionId: 'expand' },
     ];
 
     return (
@@ -367,7 +309,7 @@ const AITools = () => {
                             {quickActions.map(qa => (
                                 <button key={qa.label}
                                     disabled={isBusy || !text.trim()}
-                                    onClick={() => { setActiveQuickAction(qa.label); runAction(qa.fn, qa.label); }}
+                                    onClick={() => { setActiveQuickAction(qa.label); runAction(qa.actionId, qa.label).finally(() => setActiveQuickAction(null)); }}
                                     className="bg-card backdrop-blur border border-border hover:border-purple-500/30 rounded-xl px-4 py-3.5 text-left transition-all disabled:opacity-30 disabled:cursor-not-allowed group hover:bg-muted/50">
                                     <div className="flex items-center gap-2.5 mb-1">
                                         <div className="p-1.5 rounded-lg bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors">

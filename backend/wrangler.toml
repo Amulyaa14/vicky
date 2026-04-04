@@ -10,3 +10,6 @@ JWT_SECRET = "super-secret-video-studio-key-123456"
 binding = "DB"
 database_name = "new-website-db"
 database_id = "af4db462-eece-493f-ad59-a91d1846f2df"
+
+[ai]
+binding = "AI"

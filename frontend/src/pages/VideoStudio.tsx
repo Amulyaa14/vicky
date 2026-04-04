@@ -32,11 +32,17 @@ const VideoStudio: React.FC = () => {
     /* ─── player state ─── */
     const videoRef = useRef<HTMLVideoElement>(null);
     const [isPlaying, setIsPlaying] = useState(false);
-    const [currentTime, setCurrentTime] = useState(0); // This will now represent global project time
+    const [currentTime, setCurrentTimeState] = useState(0); 
+    const currentTimeRef = useRef(0);
+    const setCurrentTime = useCallback((t: number) => {
+        currentTimeRef.current = t;
+        setCurrentTimeState(t);
+    }, []);
     const [duration, setDuration] = useState(0); // This will now represent global project duration
     const [volume, setVolume] = useState(1);
     const [muted, setMuted] = useState(false);
     const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
+    const [activeTransition, setActiveTransition] = useState<string | null>(null);
     const [isPreviewMode, setIsPreviewMode] = useState(false); // If true, only play selected clip
     const [previewClipId, setPreviewClipId] = useState<string | null>(null);
 
@@ -77,6 +83,40 @@ const VideoStudio: React.FC = () => {
         setTimeout(() => setToast(null), 3000);
     }, []);
 
+    /* ─── undo / redo auto-tracker ─── */
+    const [history, setHistory] = useState<{clips: Clip[], transitions: TransitionItem[]}[]>([{ clips: [], transitions: [] }]);
+    const [historyIndex, setHistoryIndex] = useState(0);
+    const skipHistoryRef = useRef(true); 
+
+    useEffect(() => {
+        if (skipHistoryRef.current) { skipHistoryRef.current = false; return; }
+        setHistory(prev => {
+            const next = prev.slice(0, historyIndex + 1);
+            return [...next, { clips, transitions }];
+        });
+        setHistoryIndex(prev => prev + 1);
+    }, [clips, transitions]);
+
+    const undo = () => {
+        if (historyIndex > 0) {
+            skipHistoryRef.current = true;
+            const newIdx = historyIndex - 1;
+            setHistoryIndex(newIdx);
+            setClips(history[newIdx].clips);
+            setTransitions(history[newIdx].transitions);
+        }
+    };
+
+    const redo = () => {
+        if (historyIndex < history.length - 1) {
+            skipHistoryRef.current = true;
+            const newIdx = historyIndex + 1;
+            setHistoryIndex(newIdx);
+            setClips(history[newIdx].clips);
+            setTransitions(history[newIdx].transitions);
+        }
+    };
+
     /* ─── mobile panel state ─── */
     const [showLeftPanel, setShowLeftPanel] = useState(false);
 
@@ -114,52 +154,57 @@ const VideoStudio: React.FC = () => {
     }, [clips]);
 
     useEffect(() => {
-        if (isPreviewMode) return; // Handled separately
+        if (isPreviewMode) return; 
 
         const v = videoRef.current;
         if (!v) return;
 
-        const { clip, offset } = getCurrentClipAtTime(currentTime) || {};
+        const { clip, offset } = getCurrentClipAtTime(currentTimeRef.current) || {};
         
         if (clip) {
             if (activeVideoUrl !== clip.src) {
                 setActiveVideoUrl(clip.src || null);
                 v.currentTime = (clip.startTrim || 0) + offset!;
+                v.volume = volume;
             } else {
-                // If it's the same clip, ensure we don't drift too much
                 const targetTime = (clip.startTrim || 0) + offset!;
                 if (Math.abs(v.currentTime - targetTime) > 0.5) {
                     v.currentTime = targetTime;
                 }
             }
-            // Apply volume
             v.muted = muted || !!clip.muted;
-        } else if (currentTime >= duration && duration > 0) {
+        } else if (currentTimeRef.current >= duration && duration > 0) {
             setIsPlaying(false);
             setCurrentTime(duration);
         }
-    }, [currentTime, clips, isPreviewMode, duration, muted, activeVideoUrl, getCurrentClipAtTime]);
+    }, [currentTime, clips, isPreviewMode, duration, muted, activeVideoUrl, volume, getCurrentClipAtTime, setCurrentTime]);
 
     useEffect(() => {
-        const v = videoRef.current;
-        if (!v) return;
-
         let frameId: number;
         const update = () => {
-            if (isPlaying && !isPreviewMode) {
-                const { clip, offset } = getCurrentClipAtTime(currentTime) || {};
+            if (isPlaying && !isPreviewMode && videoRef.current) {
+                const { clip, index } = getCurrentClipAtTime(currentTimeRef.current) || {};
                 if (clip) {
-                    // Update global time based on video's progress within the current clip
                     const clipStartTime = clips.slice(0, clips.indexOf(clip)).reduce((acc, c) => acc + (c.endTrim - c.startTrim), 0);
-                    const newGlobalTime = clipStartTime + (v.currentTime - clip.startTrim);
+                    const newGlobalTime = clipStartTime + (videoRef.current.currentTime - clip.startTrim);
                     setCurrentTime(newGlobalTime);
+                    
+                    if (index !== undefined && index < clips.length - 1) {
+                        const trans = transitions.find(t => t.afterClipId === clips[index].id);
+                        if (trans) {
+                            const timeUntilEnd = clip.endTrim - videoRef.current.currentTime;
+                            if (timeUntilEnd > 0 && timeUntilEnd <= trans.duration) {
+                                setActiveTransition(trans.type);
+                            } else setActiveTransition(null);
+                        } else setActiveTransition(null);
+                    } else setActiveTransition(null);
                 }
             }
             frameId = requestAnimationFrame(update);
         };
         frameId = requestAnimationFrame(update);
         return () => cancelAnimationFrame(frameId);
-    }, [isPlaying, isPreviewMode, currentTime, clips, getCurrentClipAtTime]);
+    }, [isPlaying, isPreviewMode, clips, transitions, getCurrentClipAtTime, setCurrentTime]);
 
     useEffect(() => {
         const v = videoRef.current;
@@ -258,21 +303,20 @@ const VideoStudio: React.FC = () => {
         if (clipIdx === -1) return;
         const clip = clips[clipIdx];
         
-        // Ensure split point is within the clip's current trim range
-        // In a real editor, you'd calculate this based on the timeline position.
-        // For this implementation, we'll split the clip at the current playhead.
+        let localTime = clip.startTrim + (currentTimeRef.current - clips.slice(0, clipIdx).reduce((acc, c) => acc + (c.endTrim - c.startTrim), 0));
+        if (localTime <= clip.startTrim || localTime >= clip.endTrim) {
+            localTime = clip.startTrim + (clip.endTrim - clip.startTrim) / 2;
+        }
         
         const newClip: Clip = {
             ...clip,
             id: uid(),
             label: `${clip.label} (Part 2)`,
-            startTrim: currentTime, // New clip starts where old one split
+            startTrim: localTime, 
         };
         
         const updatedClips = [...clips];
-        // Original clip now ends where split happened
-        updatedClips[clipIdx] = { ...clip, endTrim: currentTime };
-        // Insert new clip after original
+        updatedClips[clipIdx] = { ...clip, endTrim: localTime };
         updatedClips.splice(clipIdx + 1, 0, newClip);
         
         setClips(updatedClips);
@@ -314,13 +358,14 @@ const VideoStudio: React.FC = () => {
             videoRef.current.play();
         }
     };
-
+    /*
     const stopPreview = () => {
         setIsPreviewMode(false);
         setPreviewClipId(null);
         setIsPlaying(false);
         if (videoRef.current) videoRef.current.pause();
     };
+    */
 
     /* ─── transitions ─── */
     const setTransition = (afterId: string, type: string, dur: number) => {
@@ -449,8 +494,8 @@ const VideoStudio: React.FC = () => {
                             <span className="font-bold text-sm text-white whitespace-nowrap tracking-wide">Studio</span>
                         </div>
                         <div className="hidden sm:flex items-center gap-1 ml-2 border-l border-border/60 pl-3">
-                            <button className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Undo"><Undo2 size={15} /></button>
-                            <button className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground transition-colors" title="Redo"><Redo2 size={15} /></button>
+                            <button onClick={undo} disabled={historyIndex <= 0} className={`p-1.5 rounded-lg transition-colors ${historyIndex <= 0 ? 'text-muted-foreground/40 cursor-not-allowed' : 'hover:bg-muted text-muted-foreground hover:text-foreground'}`} title="Undo"><Undo2 size={15} /></button>
+                            <button onClick={redo} disabled={historyIndex >= history.length - 1} className={`p-1.5 rounded-lg transition-colors ${historyIndex >= history.length - 1 ? 'text-muted-foreground/40 cursor-not-allowed' : 'hover:bg-muted text-muted-foreground hover:text-foreground'}`} title="Redo"><Redo2 size={15} /></button>
                         </div>
                     </div>
                     <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-2">
@@ -696,7 +741,7 @@ const VideoStudio: React.FC = () => {
                             {/* Subtle background pattern */}
                             <div className="absolute inset-0 opacity-[0.015]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '32px 32px' }} />
                             {activeVideoUrl ? (
-                                <div className={`relative w-full max-w-3xl aspect-video ${fadeClass}`}>
+                                <div className={`relative w-full max-w-3xl aspect-video ${fadeClass} transition-all duration-300 ${activeTransition === 'Fade' ? 'opacity-30 blur-md' : activeTransition === 'Zoom' ? 'scale-110 opacity-50' : activeTransition === 'Wipe' ? 'opacity-50' : ''}`}>
                                     <video ref={videoRef} src={activeVideoUrl}
                                         className="w-full h-full object-contain rounded-xl shadow-2xl shadow-black/50"
                                         style={{ filter: videoFilter }} playsInline onClick={togglePlay} />

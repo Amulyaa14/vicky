@@ -282,31 +282,6 @@ const Converter = () => {
     const [editorMode, setEditorMode] = useState<'edit' | 'preview'>('preview');
     const [isExtracting, setIsExtracting] = useState(false);
 
-    // Update specific line in the state
-    const handleUpdateLine = useCallback((pageIdx: number, lineIdx: number, newText: string) => {
-        setExtractedPages(prev => {
-            const next = [...prev];
-            const page = { ...next[pageIdx] };
-            const lines = [...page.lines];
-            lines[lineIdx] = { ...lines[lineIdx], text: newText };
-            page.lines = lines;
-            next[pageIdx] = page;
-            return next;
-        });
-    }, []);
-
-    const handleUpdateLineStyle = useCallback((pageIdx: number, lineIdx: number, styles: Partial<ExtractedLine>) => {
-        setExtractedPages(prev => {
-            const next = [...prev];
-            const page = { ...next[pageIdx] };
-            const lines = [...page.lines];
-            lines[lineIdx] = { ...lines[lineIdx], ...styles };
-            page.lines = lines;
-            next[pageIdx] = page;
-            return next;
-        });
-    }, []);
-
     // Auto-extract on file select for preview
     const handleFileSelect = useCallback(async (selectedFile: File) => {
         console.log('UI: File selected', selectedFile.name, 'Size:', selectedFile.size);
@@ -628,8 +603,7 @@ const Converter = () => {
                 <WordEditor
                     pages={extractedPages}
                     onClose={() => setShowPreview(false)}
-                    onUpdateLine={handleUpdateLine}
-                    onUpdateLineStyle={handleUpdateLineStyle}
+                    onUpdatePages={setExtractedPages}
                     initialMode={editorMode}
                     onDownload={convertDocument}
                 />

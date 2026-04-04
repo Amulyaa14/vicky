@@ -49,7 +49,6 @@ const ImageConverter = () => {
     const [resizeHeight, setResizeHeight] = useState<number | ''>('');
     const [maintainAspectRatio, setMaintainAspectRatio] = useState(true);
     const [bgColor, setBgColor] = useState('#ffffff');
-    const [resolution, setResolution] = useState(72);
 
     const addFiles = useCallback((files: FileList | File[]) => {
         const arr = Array.from(files).filter(f => 
@@ -246,7 +245,7 @@ const ImageConverter = () => {
                         onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
                         onDragLeave={() => setIsDragging(false)}
                         onDrop={onDrop}
-                        className={`border-2 border-dashed rounded-3xl p-12 text-center transition-all cursor-pointer group ${isDragging ? 'border-primary bg-primary/10 scale-[1.02]' : 'border-border/60 hover:border-primary/50 hover:bg-muted/30'}`}
+                        className={`border-2 border-dashed rounded-3xl p-12 text-center transition-all cursor-pointer group ${isDragging ? 'border-primary bg-primary/10 scale-[1.02]' : 'border-border/60 bg-background hover:border-primary/50 hover:bg-muted/30'}`}
                         onClick={() => document.getElementById('img-conv-input')?.click()}
                     >
                         <div className="flex flex-col items-center gap-4">
@@ -273,6 +272,77 @@ const ImageConverter = () => {
                             onChange={onFileInput}
                         />
                     </div>
+                    {/* File List */}
+                    {entries.length > 0 && (
+                        <div className="space-y-3 mt-8">
+                            <h3 className="text-sm font-semibold text-muted-foreground px-1">
+                                Queued Files ({entries.length})
+                            </h3>
+                            {entries.map((entry, idx) => {
+                                const fmt = FORMAT_OPTIONS.find(f => f.value === outputFormat)!;
+                                return (
+                                    <div
+                                        key={idx}
+                                        className={`flex flex-col sm:flex-row items-center gap-4 p-4 rounded-xl border transition-all ${entry.status === 'done' ? 'border-green-500/30 bg-green-500/5' : entry.status === 'error' ? 'border-destructive/30 bg-destructive/5' : 'border-border bg-card'}`}
+                                    >
+                                        <div className="w-20 h-20 flex-shrink-0 rounded-2xl overflow-hidden border-2 border-border/50 bg-muted/30 group">
+                                            <img src={entry.previewUrl} alt={entry.file.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                        </div>
+     
+                                        <div className="flex-1 min-w-0 w-full text-left">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <p className="font-bold text-sm truncate" title={entry.file.name}>{entry.file.name}</p>
+                                                <span className="px-2 py-0.5 rounded-md bg-muted text-[10px] font-bold uppercase text-muted-foreground border border-border">
+                                                    {entry.file.name.split('.').pop()?.toUpperCase()}
+                                                </span>
+                                            </div>
+                                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground font-medium">
+                                                <span className="flex items-center gap-1"><ArrowRight size={10} /> Original: {formatBytes(entry.file.size)}</span>
+                                                {entry.dimensions && (
+                                                    <span className="flex items-center gap-1">
+                                                        <Maximize2 size={10} /> {entry.dimensions.width}×{entry.dimensions.height}
+                                                    </span>
+                                                )}
+                                                {entry.status === 'done' && entry.outputSize !== null && (
+                                                    <div className="flex items-center gap-2 text-green-500 font-bold">
+                                                        <span className="flex items-center gap-1">
+                                                            <CheckCircle2 size={12} /> {fmt.ext.toUpperCase()}: {formatBytes(entry.outputSize)}
+                                                        </span>
+                                                        <span className="text-[10px] bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
+                                                            {Math.round((1 - entry.outputSize / entry.file.size) * 100) > 0
+                                                                ? `Save ${Math.round((1 - entry.outputSize / entry.file.size) * 100)}%`
+                                                                : `+${Math.round((entry.outputSize / entry.file.size - 1) * 100)}%`}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {entry.status === 'error' && <span className="text-destructive bg-destructive/10 px-2 rounded flex items-center gap-1 mt-1"><X size={12}/> {entry.errorMsg}</span>}
+                                            </div>
+                                            {entry.status === 'converting' && (
+                                                <div className="flex items-center gap-2 mt-2 text-primary font-bold">
+                                                    <Loader2 size={14} className="animate-spin text-primary" /> 
+                                                    <span className="text-[11px] uppercase tracking-widest">Optimizing &amp; Converting…</span>
+                                                </div>
+                                            )}
+                                        </div>
+    
+                                        <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
+                                            {entry.status === 'done' && (
+                                                <Button size="sm" onClick={() => handleDownloadSingle(entry)}>
+                                                    <Download size={14} className="mr-1" /> Download
+                                                </Button>
+                                            )}
+                                            <button
+                                                onClick={() => removeEntry(idx)}
+                                                className="text-xs text-muted-foreground hover:text-destructive transition-colors px-2 py-1 rounded hover:bg-destructive/10"
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
 
                     {/* Extended Configuration */}
                     <div className="mt-10 space-y-8">
@@ -423,80 +493,7 @@ const ImageConverter = () => {
                     </div>
                 </div>
 
-                {/* File List */}
-                {entries.length > 0 && (
-                    <div className="space-y-3">
-                        <h3 className="text-sm font-semibold text-muted-foreground px-1">
-                            Queued Files ({entries.length})
-                        </h3>
-                        {entries.map((entry, idx) => {
-                            const fmt = FORMAT_OPTIONS.find(f => f.value === outputFormat)!;
-                            return (
-                                <div
-                                    key={idx}
-                                    className={`flex flex-col sm:flex-row items-center gap-4 p-4 rounded-xl border transition-all ${entry.status === 'done' ? 'border-green-500/30 bg-green-500/5' : entry.status === 'error' ? 'border-destructive/30 bg-destructive/5' : 'border-border bg-card'}`}
-                                >
-                                    {/* Thumbnail */}
-                                    <div className="w-20 h-20 flex-shrink-0 rounded-2xl overflow-hidden border-2 border-border/50 bg-muted/30 group">
-                                        <img src={entry.previewUrl} alt={entry.file.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                                    </div>
- 
-                                    {/* Info */}
-                                    <div className="flex-1 min-w-0 w-full text-left">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <p className="font-bold text-sm truncate" title={entry.file.name}>{entry.file.name}</p>
-                                            <span className="px-2 py-0.5 rounded-md bg-muted text-[10px] font-bold uppercase text-muted-foreground border border-border">
-                                                {entry.file.name.split('.').pop()?.toUpperCase()}
-                                            </span>
-                                        </div>
-                                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground font-medium">
-                                            <span className="flex items-center gap-1"><ArrowRight size={10} /> Original: {formatBytes(entry.file.size)}</span>
-                                            {entry.dimensions && (
-                                                <span className="flex items-center gap-1">
-                                                    <Maximize2 size={10} /> {entry.dimensions.width}×{entry.dimensions.height}
-                                                </span>
-                                            )}
-                                            {entry.status === 'done' && entry.outputSize !== null && (
-                                                <div className="flex items-center gap-2 text-green-500 font-bold">
-                                                    <span className="flex items-center gap-1">
-                                                        <CheckCircle2 size={12} /> {fmt.ext.toUpperCase()}: {formatBytes(entry.outputSize)}
-                                                    </span>
-                                                    <span className="text-[10px] bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
-                                                        {Math.round((1 - entry.outputSize / entry.file.size) * 100) > 0
-                                                            ? `Save ${Math.round((1 - entry.outputSize / entry.file.size) * 100)}%`
-                                                            : `+${Math.round((entry.outputSize / entry.file.size - 1) * 100)}%`}
-                                                    </span>
-                                                </div>
-                                            )}
-                                            {entry.status === 'error' && <span className="text-destructive bg-destructive/10 px-2 rounded flex items-center gap-1 mt-1"><X size={12}/> {entry.errorMsg}</span>}
-                                        </div>
-                                        {entry.status === 'converting' && (
-                                            <div className="flex items-center gap-2 mt-2 text-primary font-bold">
-                                                <Loader2 size={14} className="animate-spin text-primary" /> 
-                                                <span className="text-[11px] uppercase tracking-widest">Optimizing &amp; Converting…</span>
-                                            </div>
-                                        )}
-                                    </div>
 
-                                    {/* Actions */}
-                                    <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
-                                        {entry.status === 'done' && (
-                                            <Button size="sm" onClick={() => handleDownloadSingle(entry)}>
-                                                <Download size={14} className="mr-1" /> Download
-                                            </Button>
-                                        )}
-                                        <button
-                                            onClick={() => removeEntry(idx)}
-                                            className="text-xs text-muted-foreground hover:text-destructive transition-colors px-2 py-1 rounded hover:bg-destructive/10"
-                                        >
-                                            Remove
-                                        </button>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
 
                 {/* Feature Cards */}
                 {entries.length === 0 && (

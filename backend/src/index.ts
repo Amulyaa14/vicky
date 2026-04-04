@@ -2,10 +2,12 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import authRouter from './routes/auth';
 import historyRouter from './routes/history';
+import aiRouter from './routes/ai';
 
 type Bindings = {
     DB: D1Database;
     JWT_SECRET: string;
+    AI: any;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -23,6 +25,7 @@ app.use('/*', cors({
 // Mount Modular Routers
 app.route('/api/auth', authRouter);
 app.route('/api/history', historyRouter);
+app.route('/api/ai', aiRouter);
 
 // Basic health check route
 app.get('/api/health', async (c) => {

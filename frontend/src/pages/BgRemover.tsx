@@ -4,68 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import toast from 'react-hot-toast';
 import AdSpace from '../components/ui/AdSpace';
 
-/* ─── Canvas-based background removal (colour-keying + edge detection) ─── */
-async function removeBackground(file: File): Promise<Blob> {
-    return new Promise((resolve, reject) => {
-        const img = new window.Image();
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
-            if (!ctx) { reject(new Error('Canvas not supported')); return; }
-
-            ctx.drawImage(img, 0, 0);
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const data = imageData.data;
-
-            // Sample corners for background colour (most common approach)
-            const samplePixels = [
-                [0, 0], [img.width - 1, 0],
-                [0, img.height - 1], [img.width - 1, img.height - 1],
-                [Math.floor(img.width / 2), 0],
-                [0, Math.floor(img.height / 2)],
-            ];
-
-            const bgColours = samplePixels.map(([x, y]) => {
-                const idx = (y * img.width + x) * 4;
-                return { r: data[idx], g: data[idx + 1], b: data[idx + 2] };
-            });
-
-            const avgBg = bgColours.reduce(
-                (acc, c) => ({ r: acc.r + c.r / bgColours.length, g: acc.g + c.g / bgColours.length, b: acc.b + c.b / bgColours.length }),
-                { r: 0, g: 0, b: 0 }
-            );
-
-            const threshold = 60;
-
-            for (let i = 0; i < data.length; i += 4) {
-                const r = data[i], g = data[i + 1], b = data[i + 2];
-                const dist = Math.sqrt(
-                    (r - avgBg.r) ** 2 +
-                    (g - avgBg.g) ** 2 +
-                    (b - avgBg.b) ** 2
-                );
-
-                // Also remove near-white and near-grey backgrounds
-                const isNearWhite = r > 220 && g > 220 && b > 220;
-                const isNearGrey = Math.abs(r - g) < 20 && Math.abs(g - b) < 20 && r > 180;
-
-                if (dist < threshold || isNearWhite || isNearGrey) {
-                    data[i + 3] = 0; // transparent
-                }
-            }
-
-            ctx.putImageData(imageData, 0, 0);
-            canvas.toBlob(blob => {
-                if (blob) resolve(blob);
-                else reject(new Error('Failed to export canvas'));
-            }, 'image/png');
-        };
-        img.onerror = () => reject(new Error('Failed to load image'));
-        img.src = URL.createObjectURL(file);
-    });
-}
+import { removeBackground } from '@imgly/background-removal';
 
 const BgRemover = () => {
     const [file, setFile] = useState<File | null>(null);
@@ -76,6 +15,7 @@ const BgRemover = () => {
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [progress, setProgress] = useState(0);
+    const [sliderValue, setSliderValue] = useState(50);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const loadFile = useCallback((f: File) => {
@@ -99,19 +39,24 @@ const BgRemover = () => {
         if (!file) return;
         setIsProcessing(true);
         setError(null);
-        setProgress(10);
+        setProgress(0);
 
         try {
-            // Simulate phased progress
-            const t1 = setInterval(() => setProgress(p => Math.min(p + 8, 85)), 200);
-            const blob = await removeBackground(file);
-            clearInterval(t1);
+            const blob = await removeBackground(file, {
+                progress: (_key: string, current: number, total: number) => {
+                    if (total > 0) {
+                        const percent = Math.round((current / total) * 100);
+                        setProgress(percent);
+                    }
+                }
+            });
             setProgress(100);
             const url = URL.createObjectURL(blob);
             setResult(url);
             setResultBlob(blob);
+            setSliderValue(50);
         } catch (err) {
-            setError('Processing failed. Try a PNG/JPG with a solid background for best results.');
+            setError('Processing failed. The AI model might not have loaded properly.');
         } finally {
             setIsProcessing(false);
         }
@@ -179,58 +124,69 @@ const BgRemover = () => {
                     </div>
                 ) : (
                     <div className="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 mb-8">
-                        {/* Preview row */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
-                            {/* Original */}
-                            <div>
-                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Original</p>
-                                <div className="relative rounded-xl overflow-hidden border border-border/50 bg-muted/20" style={{ minHeight: 200 }}>
-                                    <img src={preview!} alt="Original" className="w-full h-full object-contain max-h-64" />
+                        {/* Preview Area */}
+                        <div className="w-full max-w-3xl mx-auto mb-8 relative rounded-xl sm:rounded-2xl overflow-hidden border border-border/50 bg-muted/20" style={{ minHeight: 400 }}>
+                            {result ? (
+                                <div className="relative w-full h-full flex items-center justify-center min-h-[400px]"
+                                     style={{
+                                         backgroundImage: 'repeating-conic-gradient(#888 0% 25%, transparent 0% 50%)',
+                                         backgroundSize: '20px 20px',
+                                         backgroundPosition: '0 0, 10px 10px',
+                                     }}
+                                >
+                                    <img src={preview!} alt="Original" className="absolute inset-0 w-full h-full object-contain pointer-events-none" />
+                                    
+                                    <div className="absolute inset-0 w-full h-full" style={{ clipPath: `inset(0 0 0 ${sliderValue}%)` }}>
+                                        <img src={result} alt="Removed Background" className="w-full h-full object-contain pointer-events-none" />
+                                    </div>
+
+                                    <input type="range" min="0" max="100" value={sliderValue} onChange={e => setSliderValue(Number(e.target.value))} className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-10" />
+                                    
+                                    <div className="absolute top-0 bottom-0 w-0.5 bg-white shadow-[0_0_10px_rgba(0,0,0,0.5)] z-0 pointer-events-none border-x border-black/10" style={{ left: `${sliderValue}%` }}>
+                                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-xl border border-gray-200">
+                                            <div className="flex gap-1">
+                                                <div className="w-0.5 h-3.5 bg-gray-400 rounded-full" />
+                                                <div className="w-0.5 h-3.5 bg-gray-400 rounded-full" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <span className="absolute top-4 left-4 bg-black/60 text-white text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wide backdrop-blur-md">Original</span>
+                                    <span className="absolute top-4 right-4 bg-green-500/80 text-white text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wide backdrop-blur-md">Removed</span>
+                                    
                                     <button
                                         onClick={handleReset}
-                                        className="absolute top-2 right-2 w-7 h-7 bg-red-600/80 hover:bg-red-500 rounded-full flex items-center justify-center shadow transition-colors"
+                                        className="absolute bottom-4 right-4 w-9 h-9 bg-red-600/90 hover:bg-red-500 rounded-full flex items-center justify-center shadow-lg transition-colors z-20 text-white"
                                         title="Remove file"
                                     >
-                                        <X size={13} />
+                                        <Trash2 size={16} />
                                     </button>
                                 </div>
-                                <p className="text-xs text-muted-foreground mt-1.5 text-left">{file.name} · {(file.size / 1024).toFixed(0)} KB</p>
-                            </div>
-
-                            {/* Result */}
-                            <div>
-                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Result (Transparent PNG)</p>
-                                <div
-                                    className="relative rounded-xl overflow-hidden border border-border/50 flex items-center justify-center"
-                                    style={{
-                                        minHeight: 200,
-                                        backgroundImage: 'repeating-conic-gradient(#888 0% 25%, transparent 0% 50%)',
-                                        backgroundSize: '20px 20px',
-                                        backgroundPosition: '0 0, 10px 10px',
-                                    }}
-                                >
-                                    {result ? (
-                                        <img src={result} alt="Background removed" className="w-full h-full object-contain max-h-64" />
-                                    ) : (
-                                        <div className="flex flex-col items-center gap-2 text-muted-foreground p-6">
-                                            {isProcessing ? (
-                                                <>
-                                                    <Loader2 size={28} className="animate-spin text-green-400" />
-                                                    <p className="text-xs">Processing… {progress}%</p>
-                                                    <div className="w-full bg-muted/50 rounded-full h-1.5 mt-1">
-                                                        <div className="h-full bg-green-400 rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
-                                                    </div>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Image size={32} className="opacity-30" />
-                                                    <p className="text-xs">Click "Remove Background" below</p>
-                                                </>
-                                            )}
-                                        </div>
-                                    )}
+                            ) : (
+                                <div className="absolute inset-0 flex items-center justify-center min-h-[400px]">
+                                    <img src={preview!} alt="Original" className="w-full h-full object-contain p-4" />
+                                    <button
+                                        onClick={handleReset}
+                                        className="absolute top-4 right-4 w-9 h-9 bg-red-600/80 hover:bg-red-500 rounded-full flex items-center justify-center shadow-lg transition-colors z-20 text-white"
+                                        title="Remove file"
+                                    >
+                                        <X size={16} />
+                                    </button>
                                 </div>
-                            </div>
+                            )}
+
+                            {isProcessing && (
+                                <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center text-foreground z-30">
+                                    <div className="bg-card p-6 rounded-2xl shadow-2xl border border-border/50 text-center max-w-[280px] w-full mx-4">
+                                        <Loader2 size={36} className="animate-spin text-green-500 mx-auto mb-4" />
+                                        <p className="text-sm font-bold mb-3">AI Processing... {progress}%</p>
+                                        <div className="w-full bg-muted rounded-full h-2 overflow-hidden mb-2">
+                                            <div className="h-full bg-green-500 transition-all duration-300" style={{ width: `${progress}%` }} />
+                                        </div>
+                                        {progress < 20 && <p className="text-[10px] text-muted-foreground mt-4 leading-relaxed tracking-wide opacity-80">(Booting AI ONNX model locally. This ensures your image NEVER leaves your browser!)</p>}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Error */}
@@ -293,9 +249,9 @@ const BgRemover = () => {
                         <div className="space-y-4">
                             {[
                                 'Upload your image (JPG, PNG, or WEBP).',
-                                'Our AI analyses pixel colours and detects the background.',
-                                'Background pixels are made transparent — 100% in the browser.',
-                                'Download your high-resolution PNG with transparent background.',
+                                'Our AI downloads a high-precision edge-detection model directly to your browser.',
+                                'The AI perfectly masks the foreground and slices out the background locally.',
+                                'Play with the interactive sliders to inspect the result, then download the transparent PNG.',
                             ].map((step, i) => (
                                 <div key={i} className="flex items-start gap-3">
                                     <div className="w-7 h-7 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center text-xs font-bold text-green-400 shrink-0">{i + 1}</div>
