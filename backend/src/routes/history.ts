@@ -61,4 +61,23 @@ historyRouter.post('/document', authMiddleware, async (c) => {
     }
 });
 
+historyRouter.post('/audio', authMiddleware, async (c) => {
+    try {
+        const user = c.get('user');
+        const { fileName, outputFileName, sourceFormat, targetFormat } = await c.req.json();
+
+        if (!fileName || !outputFileName || !sourceFormat || !targetFormat) {
+            return c.json({ error: 'Missing conversion metadata' }, 400);
+        }
+
+        await c.env.DB.prepare(
+            'INSERT INTO audio_history (user_id, file_name, output_file_name, source_format, target_format) VALUES (?, ?, ?, ?, ?)'
+        ).bind(user.id, fileName, outputFileName, sourceFormat, targetFormat).run();
+
+        return c.json({ success: true });
+    } catch (e: any) {
+        return c.json({ error: e.message }, 500);
+    }
+});
+
 export default historyRouter;

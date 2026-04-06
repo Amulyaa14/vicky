@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Zap, Sun, Moon, ChevronRight, Home, FileText, Video, Cpu, Image as ImageIcon, Layers, Target } from 'lucide-react';
+import { Menu, X, Zap, Sun, Moon, ChevronRight, Home, FileText, Video, Cpu, Image as ImageIcon, Layers, Target, Music2 } from 'lucide-react';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '@/components/ui/Button';
@@ -63,6 +63,7 @@ const Navbar = () => {
     const navLinks = useMemo(() => [
         { name: 'Home', path: '/', icon: Home },
         { name: 'Converter', path: '/converter', icon: FileText },
+        { name: 'MP4 to MP3', path: '/mp4-to-mp3', icon: Music2 },
         { name: 'Video Studio', path: '/video-studio', icon: Video },
         { name: 'Image Editor', path: '/image-editor', icon: ImageIcon },
         { name: 'ATS Checker', path: '/ats-checker', icon: Target },

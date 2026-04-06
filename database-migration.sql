@@ -19,4 +19,16 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE INDEX idx_users_email ON users(email);
 */
 
+-- Audio conversion history for MP4 to MP3 exports
+CREATE TABLE IF NOT EXISTS audio_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    source_format TEXT NOT NULL,
+    target_format TEXT NOT NULL,
+    file_name TEXT NOT NULL,
+    output_file_name TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 -- After running this migration, the registration should work correctly

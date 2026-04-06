@@ -14,6 +14,7 @@ import ResetPassword from './pages/ResetPassword';
 
 const Home = lazy(() => import('@/pages/Home'));
 const Converter = lazy(() => import('@/pages/Converter'));
+const Mp4ToMp3 = lazy(() => import('@/pages/Mp4ToMp3'));
 const VideoTools = lazy(() => import('@/pages/VideoTools'));
 const AITools = lazy(() => import('@/pages/AITools'));
 const BgRemover = lazy(() => import('@/pages/BgRemover'));
@@ -67,6 +68,7 @@ function App() {
 
             {/* Protected Routes */}
             <Route path="converter" element={<ProtectedRoute><Converter /></ProtectedRoute>} />
+            <Route path="mp4-to-mp3" element={<ProtectedRoute><Mp4ToMp3 /></ProtectedRoute>} />
             <Route path="image-editor" element={<ProtectedRoute><ImageEditor /></ProtectedRoute>} />
             <Route path="video-tools" element={<ProtectedRoute><VideoTools /></ProtectedRoute>} />
             <Route path="ai-tools" element={<ProtectedRoute><AITools /></ProtectedRoute>} />

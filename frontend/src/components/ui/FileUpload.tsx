@@ -1,5 +1,5 @@
 import { UploadCloud, FileType, X, FileText } from 'lucide-react';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useId } from 'react';
 
 interface FileUploadProps {
     onFileSelect?: (file: File) => void;
@@ -14,6 +14,7 @@ interface FileUploadProps {
 const FileUpload = ({ onFileSelect, currentFile, onRemoveFile, accept, supportedFormats }: FileUploadProps = {}) => {
     const [isDragging, setIsDragging] = useState(false);
     const [internalFile, setInternalFile] = useState<File | null>(null);
+    const fileInputId = useId();
 
     const file = currentFile !== undefined ? currentFile : internalFile;
 
@@ -79,12 +80,15 @@ const FileUpload = ({ onFileSelect, currentFile, onRemoveFile, accept, supported
                     }}
                 >
                     <input
+                        id={fileInputId}
+                        name="file-upload"
                         type="file"
                         accept={accept}
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                         onChange={handleFileChange}
                         tabIndex={-1}
                         aria-hidden="true"
+                        aria-label="Upload file"
                     />
                     <div className="flex flex-col items-center gap-3 sm:gap-4 pointer-events-none">
                         <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center ${isDragging ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-indigo-400'}`}>

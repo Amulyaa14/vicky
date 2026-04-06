@@ -65,3 +65,15 @@ CREATE TABLE IF NOT EXISTS image_history (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+-- 7. Audio Conversion History
+CREATE TABLE IF NOT EXISTS audio_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    source_format TEXT NOT NULL,
+    target_format TEXT NOT NULL,
+    file_name TEXT NOT NULL,
+    output_file_name TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+);
